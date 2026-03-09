@@ -1055,18 +1055,21 @@ async function loadMatriculas(){
       <td><span class="badge badge-gray">${m.forma_pagamento||'—'}</span></td>
       <td><span class="badge ${docs===3?'badge-green':docs>0?'badge-orange':'badge-red'}">${docs}/3</span></td>
       <td><span class="badge ${m.status==='Confirmado'?'badge-green':m.status?.includes('Aguard')?'badge-orange':'badge-red'}">${m.status||'—'}</span></td>
-      <td><button class="btn btn-primary btn-sm" onclick="editarValorPagamento('${m.id}','${m.valor_pago||0}','${m.forma_pagamento||&quot;PIX&quot;}','${m.status||&quot;Confirmado&quot;}')">✏️ Editar</button></td>
+      <td><button class="btn btn-primary btn-sm" onclick="editarValorPagamento('${m.id}')">✏️ Editar</button></td>
     </tr>`;
   }).join('');
 }
 
 // ── EDITAR VALOR RÁPIDO (financeiro) ──
 let editingFinId = null;
-async function editarValorPagamento(id, valor, pagto, status) {
+async function editarValorPagamento(id) {
   editingFinId = id;
-  if($('fv-valor')) $('fv-valor').value = (valor && valor !== 'null' && valor !== '0') ? valor : '';
-  if($('fv-pagto')) $('fv-pagto').value = (pagto && pagto !== 'null') ? pagto : 'PIX';
-  if($('fv-status')) $('fv-status').value = (status && status !== 'null') ? status : 'Confirmado';
+  // busca os dados atuais direto do Supabase
+  const {data, error} = await sb.from('matriculas').select('valor_pago,forma_pagamento,status').eq('id', id).single();
+  if(error){ showToast('❌','Erro ao carregar dados!','error'); return; }
+  if($('fv-valor')) $('fv-valor').value = data.valor_pago != null ? data.valor_pago : '';
+  if($('fv-pagto')) $('fv-pagto').value = data.forma_pagamento || 'PIX';
+  if($('fv-status')) $('fv-status').value = data.status || 'Confirmado';
   openModal('finModal');
 }
 async function salvarValorPagamento() {
