@@ -207,6 +207,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
     <div class="nav-item" onclick="setTab('crm')">🎯 CRM — Leads <span class="nav-badge" id="nav-crm-count">0</span></div>
     <div class="nav-label">Estratégico</div>
     <div class="nav-item" onclick="setTab('kpis')">📈 KPIs & Aprovação</div>
+    <div class="nav-item" onclick="setTab('relatorios')">📋 Relatórios</div>
   </div>
   <div class="sidebar-footer">
     <div class="user-card">
@@ -241,6 +242,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
       <div class="tab" onclick="setTab('financeiro')">💰 Financeiro</div>
       <div class="tab" onclick="setTab('crm')">🎯 CRM</div>
       <div class="tab" onclick="setTab('kpis')">📈 KPIs</div>
+    <div class="tab" onclick="setTab('relatorios')">📋 Relatórios</div>
     </div>
 
     <!-- ══ OVERVIEW ══ -->
@@ -470,6 +472,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
           <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" id="a-tel" placeholder="(00) 0000-0000"></div>
           <div class="form-group"><label class="form-label">WhatsApp (com DDI+DDD)</label><input class="form-input" id="a-wpp" placeholder="5511990001234"></div>
           <div class="form-group"><label class="form-label">Empresa</label><input class="form-input" id="a-empresa" placeholder="Nome da empresa"></div>
+          <div class="form-group"><label class="form-label">Notas Fiscais / Dados de Faturamento</label><input class="form-input" id="a-nf" placeholder="CNPJ, Razão Social ou observação fiscal"></div>
           <div class="form-group"><label class="form-label">Cargo / Função</label><input class="form-input" id="a-cargo" placeholder="Ex: Técnico de Segurança"></div>
           <div class="form-group full"><label class="form-label">Endereço Completo</label><input class="form-input" id="a-end" placeholder="Rua, número, bairro, cidade — UF"></div>
         </div>
@@ -595,7 +598,19 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
         <div class="form-group"><label class="form-label">Data de Início *</label><input class="form-input" type="date" id="m-datainicio"></div>
         <div class="form-group"><label class="form-label">Data de Término</label><input class="form-input" type="date" id="m-datafim"></div>
         <div class="form-group"><label class="form-label">Horário</label><input class="form-input" id="m-horario" placeholder="Ex: 08:00 – 17:00"></div>
-        <div class="form-group"><label class="form-label">Valor (R$) *</label><input class="form-input" id="m-valor" type="number" step="0.01" min="0" placeholder="1900.00"></div>
+        <div class="form-group"><label class="form-label">Valor do Treinamento (R$) *</label>
+          <div style="position:relative">
+            <input class="form-input" id="m-valor" type="number" step="0.01" min="0" placeholder="Ex: 3100.00">
+            <div style="display:flex;gap:5px;margin-top:5px">
+              <button type="button" class="btn btn-ghost btn-sm" style="font-size:10px" onclick="$('m-valor').value='3100'">🧗 R$3.100 (IRATA)</button>
+              <button type="button" class="btn btn-ghost btn-sm" style="font-size:10px" onclick="$('m-valor').value='1200'">🚒 R$1.200 (Resgate)</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Valor Certificação IRATA Brasil (R$)</label>
+          <input class="form-input" id="m-valor-cert" type="number" step="0.01" min="0" placeholder="Ex: 450.00">
+          <div style="font-size:10px;color:var(--text2);margin-top:3px">Taxa de certificação cobrada pelo IRATA Brasil (separado do treinamento)</div>
+        </div>
         <div class="form-group"><label class="form-label">Forma de Pagamento</label><select class="form-select" id="m-pagto"><option>PIX</option><option>Boleto</option><option>Cartão de Crédito</option><option>Faturamento</option><option>Isento</option></select></div>
         <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="m-status"><option>Confirmado</option><option>Aguardando Pagamento</option><option>Documentação Pendente</option><option>Cancelado</option></select></div>
       </div>
@@ -737,6 +752,46 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
   </div>
 </div>
 
+
+    <!-- ══ RELATÓRIOS ══ -->
+    <div class="panel" id="panel-relatorios">
+
+      <!-- FILTROS GLOBAIS -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header">
+          <span class="card-title">🔍 Filtros</span>
+          <div class="flex-row" style="flex-wrap:wrap;gap:8px">
+            <select class="form-select" id="rel-tipo" style="width:200px;font-size:12px" onchange="loadRelatorios()">
+              <option value="contas_receber">💰 Contas a Receber</option>
+              <option value="notas_fiscais">🧾 Notas Fiscais por Empresa</option>
+              <option value="receita_curso">📚 Receita por Curso</option>
+              <option value="certs_vencendo">🏆 Certificações Vencendo</option>
+            </select>
+            <input class="form-input" id="rel-data-ini" type="date" style="width:145px;font-size:12px" onchange="loadRelatorios()">
+            <input class="form-input" id="rel-data-fim" type="date" style="width:145px;font-size:12px" onchange="loadRelatorios()">
+            <button class="btn btn-ghost btn-sm" onclick="limparFiltros()">🔄 Limpar</button>
+            <button class="btn btn-success btn-sm" onclick="exportarCSV()">📥 Exportar CSV</button>
+            <button class="btn btn-ghost btn-sm" onclick="imprimirRelatorio()">🖨️ Imprimir / PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUMÁRIO CARDS -->
+      <div class="stats-grid" id="rel-stats" style="margin-bottom:14px"></div>
+
+      <!-- TABELA RELATÓRIO -->
+      <div class="card" id="rel-card">
+        <div class="card-header">
+          <span class="card-title" id="rel-titulo">💰 Contas a Receber</span>
+          <span class="badge badge-gray" id="rel-total-badge">0 registros</span>
+        </div>
+        <div style="overflow-x:auto" id="rel-table-wrap">
+          <div class="loading">Selecione um relatório e clique em filtrar</div>
+        </div>
+      </div>
+
+    </div><!-- /panel-relatorios -->
+
 <!-- TOAST -->
 <div class="toast" id="toast"><span id="toast-icon">✅</span><span id="toast-msg">Mensagem</span></div>
 
@@ -772,7 +827,7 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 });
 
 // ── TABS ──
-const pageTitles={overview:'Visão Geral — Alpiend',cursos:'Cursos & Turmas',alunos:'Gestão de Alunos',calendar:'Calendário de Turmas',cert:'Controle de Certificações',presenca:'Controle de Presença',financeiro:'Financeiro & Vendas',crm:'CRM — Leads & Prospecção',kpis:'KPIs & Índice de Aprovação'};
+const pageTitles={overview:'Visão Geral — Alpiend',cursos:'Cursos & Turmas',alunos:'Gestão de Alunos',calendar:'Calendário de Turmas',cert:'Controle de Certificações',presenca:'Controle de Presença',financeiro:'Financeiro & Vendas',crm:'CRM — Leads & Prospecção',kpis:'KPIs & Índice de Aprovação',relatorios:'Relatórios — Contas & Notas Fiscais'};
 function setTab(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -788,6 +843,7 @@ function setTab(id){
   if(id==='presenca') loadPresenca();
   if(id==='financeiro') loadFinanceiro();
   if(id==='kpis') loadKPIs();
+  if(id==='relatorios') loadRelatorios();
   if(id==='cursos') loadTurmas();
 }
 
@@ -890,17 +946,31 @@ function renderAlunos(data,tbody){
     <td style="font-size:11px;color:var(--text2)">${a.created_at?new Date(a.created_at).toLocaleDateString('pt-BR'):'—'}</td>
     <td><div class="flex-row" style="gap:4px">
       <button class="btn btn-primary btn-sm" onclick="editarAluno('${a.id}')">✏️</button>
-      ${a.whatsapp?`<button class="btn btn-whatsapp btn-sm" onclick="sendWhatsApp('${esc(a.whatsapp)}','${esc(a.nome)}',null)">📱</button>`:''}
+        <button class="btn btn-danger btn-sm" onclick="confirmarExcluirAluno('${a.id}','${esc(a.nome)}')">🗑️</button>
+        ${a.whatsapp?`<button class="btn btn-whatsapp btn-sm" onclick="sendWhatsApp('${esc(a.whatsapp)}','${esc(a.nome)}',null)">📱</button>`:''}
     </div></td>
   </tr>`).join('');
 }
 function filterAlunos(){loadAlunos($('search-alunos')?.value||'');}
 
+// ── EXCLUIR ALUNO ──
+function confirmarExcluirAluno(id, nome){
+  if(confirm(`⚠️ Tem certeza que deseja EXCLUIR o aluno "${nome}"?\n\nEsta ação não pode ser desfeita.`)){
+    excluirAluno(id, nome);
+  }
+}
+async function excluirAluno(id, nome){
+  const {error} = await sb.from('alunos').delete().eq('id', id);
+  if(error){ showToast('❌','Erro ao excluir: '+error.message,'error'); return; }
+  showToast('🗑️','Aluno '+nome+' excluído com sucesso!');
+  loadAlunos(); loadOverview();
+}
+
 // ── CADASTRO / EDIÇÃO ALUNO ──
 let editingAlunoId=null;
 function abrirCadastroAluno(){
   editingAlunoId=null;
-  ['a-nome','a-cpf','a-rg','a-nasc','a-email','a-tel','a-wpp','a-empresa','a-cargo','a-end','a-obs'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  ['a-nome','a-cpf','a-rg','a-nasc','a-email','a-tel','a-wpp','a-empresa','a-nf','a-cargo','a-end','a-obs'].forEach(id=>{const el=$(id);if(el)el.value='';});
   $('alunoModalTitle').textContent='👤 Cadastrar Aluno';
   $('alunoSaveBtn').textContent='✅ Salvar Aluno';
   setCTab('dados');
@@ -919,6 +989,7 @@ async function editarAluno(id){
   $('a-wpp').value=data.whatsapp||'';
   $('a-empresa').value=data.empresa||'';
   $('a-cargo').value=data.cargo||'';
+  if($('a-nf')) $('a-nf').value=data.notas_fiscais||'';
   $('a-end').value=data.endereco||'';
   $('a-obs').value=data.observacoes||'';
   if($('a-origem')) $('a-origem').value=data.origem||'Indicação';
@@ -931,7 +1002,7 @@ function fecharCadastroAluno(){editingAlunoId=null;closeModal('alunoModal');}
 async function salvarAluno(){
   const nome=$('a-nome')?.value?.trim();
   if(!nome){showToast('⚠️','Preencha o nome do aluno!','error');return;}
-  const payload={nome,cpf:$('a-cpf').value||null,rg:$('a-rg').value||null,data_nascimento:$('a-nasc').value||null,email:$('a-email').value||null,telefone:$('a-tel').value||null,whatsapp:$('a-wpp').value||null,empresa:$('a-empresa').value||null,cargo:$('a-cargo').value||null,endereco:$('a-end').value||null,origem:$('a-origem')?.value||null,observacoes:$('a-obs').value||null};
+  const payload={nome,cpf:$('a-cpf').value||null,rg:$('a-rg').value||null,data_nascimento:$('a-nasc').value||null,email:$('a-email').value||null,telefone:$('a-tel').value||null,whatsapp:$('a-wpp').value||null,empresa:$('a-empresa').value||null,notas_fiscais:$('a-nf')?.value||null,cargo:$('a-cargo').value||null,endereco:$('a-end').value||null,origem:$('a-origem')?.value||null,observacoes:$('a-obs').value||null};
   let error;
   if(editingAlunoId){
     ({error}=await sb.from('alunos').update(payload).eq('id',editingAlunoId));
@@ -1035,6 +1106,7 @@ async function editarMatricula(id){
   $('m-empresa').value=data.alunos?.empresa||'';
   if($('m-aluno-sel'))$('m-aluno-sel').value=data.aluno_id||'';
   if($('m-valor'))$('m-valor').value=data.valor_pago!=null?data.valor_pago:'';
+  if($('m-valor-cert'))$('m-valor-cert').value=data.valor_certificacao!=null?data.valor_certificacao:'';
   if($('m-pagto'))$('m-pagto').value=data.forma_pagamento||'PIX';
   if($('m-status'))$('m-status').value=data.status||'Confirmado';
   if($('m-datainicio'))$('m-datainicio').value=data.data_matricula||'';
@@ -1117,7 +1189,9 @@ async function salvarMatricula(){
   if(!aluno_id){showToast('⚠️','Informe o candidato!','error');return;}
   const valorStr=$('m-valor')?.value||'0';
   const valor=parseFloat(String(valorStr).replace(',','.'));
-  const payload={aluno_id,turma_id:$('m-turma')?.value||null,data_matricula:$('m-datainicio')?.value||new Date().toISOString().split('T')[0],valor_pago:isNaN(valor)?null:valor,forma_pagamento:$('m-pagto')?.value||null,status:$('m-status')?.value||'Confirmado'};
+  const valorCertStr=$('m-valor-cert')?.value||'';
+  const valorCert=valorCertStr?parseFloat(String(valorCertStr).replace(',','.')):null;
+  const payload={aluno_id,turma_id:$('m-turma')?.value||null,data_matricula:$('m-datainicio')?.value||new Date().toISOString().split('T')[0],valor_pago:isNaN(valor)?null:valor,valor_certificacao:isNaN(valorCert)||valorCert===null?null:valorCert,forma_pagamento:$('m-pagto')?.value||null,status:$('m-status')?.value||'Confirmado'};
   let error;
   if(editingMatriculaId){({error}=await sb.from('matriculas').update(payload).eq('id',editingMatriculaId));}
   else{({error}=await sb.from('matriculas').insert([payload]));}
@@ -1142,7 +1216,10 @@ async function loadMatriculas(){
       <td><span class="chip">—</span></td>
       <td>${fmtDate(m.data_matricula)}</td>
       <td style="font-size:11px;color:var(--text2)">—</td>
-      <td style="color:var(--green);font-weight:700">${fmt(m.valor_pago)}</td>
+      <td>
+        <div style="color:var(--green);font-weight:700">${fmt(m.valor_pago)}</div>
+        ${m.valor_certificacao?`<div style="font-size:10px;color:var(--blue);margin-top:2px">🏆 Cert: ${fmt(m.valor_certificacao)}</div>`:''}
+      </td>
       <td><span class="badge badge-gray">${m.forma_pagamento||'—'}</span></td>
       <td><span class="badge ${docs===3?'badge-green':docs>0?'badge-orange':'badge-red'}">${docs}/3</span></td>
       <td><span class="badge ${m.status==='Confirmado'?'badge-green':m.status?.includes('Aguard')?'badge-orange':'badge-red'}">${m.status||'—'}</span></td>
@@ -1467,6 +1544,357 @@ async function loadOverview(){
   await loadCerts();
   await loadLeads();
 }
+
+
+// ══════════════════════════════════════════
+// ── RELATÓRIOS ──
+// ══════════════════════════════════════════
+
+let relData = []; // dados carregados para exportação
+let relCols = []; // colunas para exportação
+
+function limparFiltros(){
+  $('rel-data-ini').value='';
+  $('rel-data-fim').value='';
+  loadRelatorios();
+}
+
+function imprimirRelatorio(){
+  window.print();
+}
+
+async function loadRelatorios(){
+  const tipo = $('rel-tipo')?.value || 'contas_receber';
+  const ini  = $('rel-data-ini')?.value || null;
+  const fim  = $('rel-data-fim')?.value || null;
+
+  $('rel-table-wrap').innerHTML = '<div class="loading">⏳ Carregando dados...</div>';
+  $('rel-stats').innerHTML = '';
+
+  if(tipo === 'contas_receber')  await relContasReceber(ini, fim);
+  if(tipo === 'notas_fiscais')   await relNotasFiscais(ini, fim);
+  if(tipo === 'receita_curso')   await relReceitaCurso(ini, fim);
+  if(tipo === 'certs_vencendo')  await relCertsVencendo(ini, fim);
+}
+
+// ── Filtro de data helper ──
+function aplicarFiltroDatas(query, campo, ini, fim){
+  if(ini) query = query.gte(campo, ini);
+  if(fim) query = query.lte(campo, fim);
+  return query;
+}
+
+// ── Stat card helper ──
+function renderRelStats(cards){
+  $('rel-stats').innerHTML = cards.map(c=>`
+    <div class="stat-card">
+      <div class="stat-icon" style="background:${c.bg||'rgba(245,166,35,.12)'}">${c.icon}</div>
+      <div class="stat-value" style="color:${c.color||'var(--text)'}">${c.val}</div>
+      <div class="stat-label">${c.label}</div>
+    </div>`).join('');
+}
+
+// ══ RELATÓRIO 1: CONTAS A RECEBER ══
+async function relContasReceber(ini, fim){
+  $('rel-titulo').textContent = '💰 Contas a Receber';
+  let q = sb.from('matriculas')
+    .select('*, alunos(nome, empresa, whatsapp, notas_fiscais)')
+    .in('status', ['Aguardando Pagamento', 'Documentação Pendente'])
+    .order('data_matricula', {ascending: true});
+  q = aplicarFiltroDatas(q, 'data_matricula', ini, fim);
+  const {data, error} = await q;
+  if(error){ $('rel-table-wrap').innerHTML='<div class="loading">❌ Erro: '+error.message+'</div>'; return; }
+
+  const total = (data||[]).reduce((s,m)=>s+(m.valor_pago||0),0);
+  const totalCert = (data||[]).reduce((s,m)=>s+(m.valor_certificacao||0),0);
+  const vencidas = (data||[]).filter(m=>m.data_matricula && diffDays(m.data_matricula) < -30).length;
+
+  renderRelStats([
+    {icon:'📋', val: data?.length||0, label:'Contas Pendentes', bg:'rgba(231,76,60,.1)', color:'var(--red)'},
+    {icon:'💰', val: fmt(total), label:'Valor Total Pendente', bg:'rgba(243,156,18,.1)', color:'var(--orange)'},
+    {icon:'🏆', val: fmt(totalCert), label:'Certificações Pendentes', bg:'rgba(52,152,219,.1)', color:'var(--blue)'},
+    {icon:'⚠️', val: vencidas, label:'Acima de 30 dias', bg:'rgba(231,76,60,.08)', color:'var(--red)'},
+  ]);
+
+  $('rel-total-badge').textContent = (data?.length||0)+' registros';
+  relCols = ['Aluno','Empresa','Notas Fiscais / CNPJ','Data Matrícula','Valor Treinamento','Valor Cert. IRATA','Pagamento','Status','WhatsApp'];
+  relData = (data||[]).map(m=>({
+    'Aluno': m.alunos?.nome||'—',
+    'Empresa': m.alunos?.empresa||'—',
+    'Notas Fiscais / CNPJ': m.alunos?.notas_fiscais||'—',
+    'Data Matrícula': fmtDate(m.data_matricula),
+    'Valor Treinamento': m.valor_pago||0,
+    'Valor Cert. IRATA': m.valor_certificacao||0,
+    'Pagamento': m.forma_pagamento||'—',
+    'Status': m.status||'—',
+    'WhatsApp': m.alunos?.whatsapp||'—',
+  }));
+
+  if(!data?.length){
+    $('rel-table-wrap').innerHTML='<div class="empty-state"><div class="icon">✅</div><p>Nenhuma conta pendente encontrada!</p></div>';
+    return;
+  }
+
+  $('rel-table-wrap').innerHTML = `<table class="table">
+    <thead><tr>
+      <th>Aluno</th><th>Empresa</th><th>CNPJ / NF</th>
+      <th>Data</th><th>Valor Treinamento</th><th>Valor Cert.</th>
+      <th>Pagamento</th><th>Status</th><th>Ação</th>
+    </tr></thead>
+    <tbody>${(data||[]).map(m=>{
+      const diasAtraso = m.data_matricula ? Math.max(0, -diffDays(m.data_matricula)) : 0;
+      const atrasado = diasAtraso > 30;
+      return `<tr ${atrasado?'style="background:rgba(231,76,60,.04)"':''}>
+        <td><span class="flex-row"><span class="avatar-sm">${initials(m.alunos?.nome||'?')}</span><strong>${m.alunos?.nome||'—'}</strong></span></td>
+        <td style="font-size:11px">${m.alunos?.empresa||'—'}</td>
+        <td style="font-size:11px;color:var(--text2)">${m.alunos?.notas_fiscais||'—'}</td>
+        <td style="font-size:11px">${fmtDate(m.data_matricula)}</td>
+        <td style="font-weight:700;color:var(--orange)">${fmt(m.valor_pago)}</td>
+        <td style="font-size:11px;color:var(--blue)">${m.valor_certificacao?fmt(m.valor_certificacao):'—'}</td>
+        <td><span class="badge badge-gray">${m.forma_pagamento||'—'}</span></td>
+        <td>
+          <span class="badge badge-orange">${m.status||'—'}</span>
+          ${atrasado?`<div style="font-size:9px;color:var(--red);margin-top:2px">⚠️ ${diasAtraso}d atraso</div>`:''}
+        </td>
+        <td>${m.alunos?.whatsapp?`<button class="btn btn-whatsapp btn-sm" onclick="window.open(buildWpp('${esc(m.alunos.whatsapp)}','Olá *${esc(m.alunos.nome)}*! Passando para lembrar sobre o pagamento pendente do seu treinamento na *Alpiend*. Podemos ajudar? 💰'),'_blank')">📱 Cobrar</button>`:'—'}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+// ══ RELATÓRIO 2: NOTAS FISCAIS POR EMPRESA ══
+async function relNotasFiscais(ini, fim){
+  $('rel-titulo').textContent = '🧾 Notas Fiscais por Empresa';
+  let q = sb.from('matriculas')
+    .select('*, alunos(nome, empresa, notas_fiscais, whatsapp)')
+    .not('alunos.empresa', 'is', null)
+    .order('data_matricula', {ascending: false});
+  q = aplicarFiltroDatas(q, 'data_matricula', ini, fim);
+  const {data, error} = await q;
+  if(error){ $('rel-table-wrap').innerHTML='<div class="loading">❌ Erro: '+error.message+'</div>'; return; }
+
+  // Agrupar por empresa
+  const grupos = {};
+  (data||[]).forEach(m=>{
+    const emp = m.alunos?.empresa || 'Sem Empresa';
+    const nf  = m.alunos?.notas_fiscais || '—';
+    if(!grupos[emp]) grupos[emp] = {empresa:emp, nf, alunos:[], total:0, totalCert:0};
+    grupos[emp].alunos.push(m.alunos?.nome||'—');
+    grupos[emp].total += m.valor_pago||0;
+    grupos[emp].totalCert += m.valor_certificacao||0;
+  });
+  const lista = Object.values(grupos).sort((a,b)=>b.total-a.total);
+  const totalGeral = lista.reduce((s,g)=>s+g.total,0);
+  const totalCertGeral = lista.reduce((s,g)=>s+g.totalCert,0);
+
+  renderRelStats([
+    {icon:'🏢', val: lista.length, label:'Empresas', bg:'rgba(52,152,219,.1)', color:'var(--blue)'},
+    {icon:'👥', val: data?.length||0, label:'Matrículas', bg:'rgba(245,166,35,.1)', color:'var(--accent)'},
+    {icon:'💰', val: fmt(totalGeral), label:'Total Treinamentos', bg:'rgba(46,204,113,.1)', color:'var(--green)'},
+    {icon:'🏆', val: fmt(totalCertGeral), label:'Total Certificações', bg:'rgba(155,89,182,.1)', color:'#9b59b6'},
+  ]);
+
+  $('rel-total-badge').textContent = lista.length+' empresas';
+  relCols = ['Empresa','CNPJ / Dados NF','Qtd Alunos','Alunos','Total Treinamento','Total Certificação','Total Geral'];
+  relData = lista.map(g=>({
+    'Empresa': g.empresa,
+    'CNPJ / Dados NF': g.nf,
+    'Qtd Alunos': g.alunos.length,
+    'Alunos': g.alunos.join(', '),
+    'Total Treinamento': g.total,
+    'Total Certificação': g.totalCert,
+    'Total Geral': g.total+g.totalCert,
+  }));
+
+  if(!lista.length){
+    $('rel-table-wrap').innerHTML='<div class="empty-state"><div class="icon">🧾</div><p>Nenhuma matrícula com empresa cadastrada</p></div>';
+    return;
+  }
+
+  $('rel-table-wrap').innerHTML = `<table class="table">
+    <thead><tr>
+      <th>Empresa</th><th>CNPJ / Dados NF</th><th>Qtd Alunos</th>
+      <th>Nomes</th><th>Total Treinamento</th><th>Total Cert.</th><th>Total Geral</th>
+    </tr></thead>
+    <tbody>${lista.map(g=>`<tr>
+      <td><strong>${g.empresa}</strong></td>
+      <td style="font-size:11px;color:var(--text2)">${g.nf}</td>
+      <td style="text-align:center"><span class="badge badge-blue">${g.alunos.length}</span></td>
+      <td style="font-size:11px;color:var(--text2);max-width:180px">${g.alunos.join(', ')}</td>
+      <td style="font-weight:700;color:var(--green)">${fmt(g.total)}</td>
+      <td style="font-size:12px;color:var(--blue)">${g.totalCert?fmt(g.totalCert):'—'}</td>
+      <td style="font-weight:700;color:var(--accent)">${fmt(g.total+g.totalCert)}</td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr style="background:rgba(245,166,35,.06)">
+      <td colspan="4" style="font-weight:700;font-size:12px">TOTAL GERAL</td>
+      <td style="font-weight:700;color:var(--green)">${fmt(totalGeral)}</td>
+      <td style="font-weight:700;color:var(--blue)">${fmt(totalCertGeral)}</td>
+      <td style="font-weight:700;color:var(--accent)">${fmt(totalGeral+totalCertGeral)}</td>
+    </tr></tfoot>
+  </table>`;
+}
+
+// ══ RELATÓRIO 3: RECEITA POR CURSO ══
+async function relReceitaCurso(ini, fim){
+  $('rel-titulo').textContent = '📚 Receita por Curso';
+  let q = sb.from('matriculas')
+    .select('*, turmas(nome), alunos(nome, empresa)')
+    .order('data_matricula', {ascending: false});
+  q = aplicarFiltroDatas(q, 'data_matricula', ini, fim);
+  const {data, error} = await q;
+  if(error){ $('rel-table-wrap').innerHTML='<div class="loading">❌ Erro: '+error.message+'</div>'; return; }
+
+  const irata   = (data||[]).filter(m=>m.turmas?.nome?.toLowerCase().includes('irata')||m.turmas?.nome?.toLowerCase().includes('corda'));
+  const resgate = (data||[]).filter(m=>!m.turmas?.nome?.toLowerCase().includes('irata')&&!m.turmas?.nome?.toLowerCase().includes('corda'));
+  const outros  = (data||[]).filter(m=>!m.turmas);
+  const recIrata   = irata.reduce((s,m)=>s+(m.valor_pago||0),0);
+  const recResgate = resgate.reduce((s,m)=>s+(m.valor_pago||0),0);
+  const recTotal   = (data||[]).reduce((s,m)=>s+(m.valor_pago||0),0);
+  const recCert    = (data||[]).reduce((s,m)=>s+(m.valor_certificacao||0),0);
+
+  renderRelStats([
+    {icon:'🧗', val: fmt(recIrata), label:'Receita IRATA', bg:'rgba(245,166,35,.12)', color:'var(--accent)'},
+    {icon:'🚒', val: fmt(recResgate), label:'Receita Resgate', bg:'rgba(52,152,219,.1)', color:'var(--blue)'},
+    {icon:'🏆', val: fmt(recCert), label:'Receita Certificações', bg:'rgba(155,89,182,.1)', color:'#9b59b6'},
+    {icon:'💰', val: fmt(recTotal+recCert), label:'Receita Total Geral', bg:'rgba(46,204,113,.1)', color:'var(--green)'},
+  ]);
+
+  $('rel-total-badge').textContent = (data?.length||0)+' matrículas';
+  relCols = ['Aluno','Empresa','Turma','Data Matrícula','Valor Treinamento','Valor Cert.','Pagamento','Status'];
+  relData = (data||[]).map(m=>({
+    'Aluno': m.alunos?.nome||'—',
+    'Empresa': m.alunos?.empresa||'—',
+    'Turma': m.turmas?.nome||'Sem turma',
+    'Data Matrícula': fmtDate(m.data_matricula),
+    'Valor Treinamento': m.valor_pago||0,
+    'Valor Cert.': m.valor_certificacao||0,
+    'Pagamento': m.forma_pagamento||'—',
+    'Status': m.status||'—',
+  }));
+
+  if(!data?.length){
+    $('rel-table-wrap').innerHTML='<div class="empty-state"><div class="icon">📚</div><p>Nenhuma matrícula no período</p></div>';
+    return;
+  }
+
+  // cards visuais por curso
+  const cursosHTML = [
+    {nome:'🧗 Acesso por Cordas — IRATA', dados:irata, receita:recIrata, cor:'var(--accent)'},
+    {nome:'🚒 Resgate Técnico Industrial', dados:resgate, receita:recResgate, cor:'var(--blue)'},
+    ...(outros.length?[{nome:'📋 Sem Turma Definida', dados:outros, receita:0, cor:'var(--text2)'}]:[]),
+  ].map(c=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:13px;margin-bottom:10px">
+      <div class="flex-row" style="margin-bottom:10px">
+        <span style="font-size:13px;font-weight:700">${c.nome}</span>
+        <span class="ml-auto" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:${c.cor}">${fmt(c.receita)}</span>
+      </div>
+      <table class="table" style="font-size:11px">
+        <thead><tr><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Valor</th><th>Cert.</th><th>Status</th></tr></thead>
+        <tbody>${c.dados.map(m=>`<tr>
+          <td>${m.alunos?.nome||'—'}</td>
+          <td>${m.alunos?.empresa||'—'}</td>
+          <td style="color:var(--text2)">${m.turmas?.nome||'—'}</td>
+          <td style="color:var(--green);font-weight:700">${fmt(m.valor_pago)}</td>
+          <td style="color:var(--blue)">${m.valor_certificacao?fmt(m.valor_certificacao):'—'}</td>
+          <td><span class="badge ${m.status==='Confirmado'?'badge-green':'badge-orange'}" style="font-size:8px">${m.status||'—'}</span></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`).join('');
+
+  $('rel-table-wrap').innerHTML = cursosHTML;
+}
+
+// ══ RELATÓRIO 4: CERTIFICAÇÕES VENCENDO ══
+async function relCertsVencendo(ini, fim){
+  $('rel-titulo').textContent = '🏆 Certificações Vencendo';
+  const {data, error} = await sb.from('certificacoes')
+    .select('*, alunos(nome, empresa, whatsapp)')
+    .order('data_vencimento', {ascending: true});
+  if(error){ $('rel-table-wrap').innerHTML='<div class="loading">❌ Erro: '+error.message+'</div>'; return; }
+
+  const hoje = new Date();
+  let lista = data||[];
+  if(ini) lista = lista.filter(c=>c.data_vencimento >= ini);
+  if(fim) lista = lista.filter(c=>c.data_vencimento <= fim);
+
+  const vencidas    = lista.filter(c=>diffDays(c.data_vencimento)<0);
+  const em7d        = lista.filter(c=>{const d=diffDays(c.data_vencimento);return d>=0&&d<=7;});
+  const em30d       = lista.filter(c=>{const d=diffDays(c.data_vencimento);return d>7&&d<=30;});
+  const ok          = lista.filter(c=>diffDays(c.data_vencimento)>30);
+
+  renderRelStats([
+    {icon:'❌', val: vencidas.length, label:'Vencidas', bg:'rgba(231,76,60,.12)', color:'var(--red)'},
+    {icon:'🔴', val: em7d.length, label:'Vencem em 7 dias', bg:'rgba(231,76,60,.08)', color:'var(--red)'},
+    {icon:'🟡', val: em30d.length, label:'Vencem em 30 dias', bg:'rgba(243,156,18,.1)', color:'var(--orange)'},
+    {icon:'✅', val: ok.length, label:'Em dia', bg:'rgba(46,204,113,.1)', color:'var(--green)'},
+  ]);
+
+  $('rel-total-badge').textContent = lista.length+' certificações';
+  relCols = ['Aluno','Empresa','Certificação','Nº Cert.','Emissão','Aprovação','Nota','Vencimento','Dias Restantes','Status'];
+  relData = lista.map(c=>({
+    'Aluno': c.alunos?.nome||'—',
+    'Empresa': c.alunos?.empresa||'—',
+    'Certificação': c.curso_id?.includes('irata')?'IRATA':'Resgate',
+    'Nº Cert.': c.numero_certificado||'—',
+    'Emissão': fmtDate(c.data_emissao),
+    'Aprovação': fmtDate(c.data_aprovacao),
+    'Nota': c.nota_aprovacao!=null?c.nota_aprovacao:'—',
+    'Vencimento': fmtDate(c.data_vencimento),
+    'Dias Restantes': diffDays(c.data_vencimento)??'—',
+    'Status': c.status||'—',
+  }));
+
+  if(!lista.length){
+    $('rel-table-wrap').innerHTML='<div class="empty-state"><div class="icon">🏆</div><p>Nenhuma certificação no período</p></div>';
+    return;
+  }
+
+  $('rel-table-wrap').innerHTML = `<table class="table">
+    <thead><tr>
+      <th>Aluno</th><th>Empresa</th><th>Certificação</th><th>Nº Cert.</th>
+      <th>Vencimento</th><th>Restam</th><th>Status</th><th>Ação</th>
+    </tr></thead>
+    <tbody>${lista.map(c=>{
+      const dias=diffDays(c.data_vencimento);
+      const vencida=dias<0;
+      const urgente=dias>=0&&dias<=7;
+      const atencao=dias>7&&dias<=30;
+      return `<tr ${urgente||vencida?'style="background:rgba(231,76,60,.04)"':''}>
+        <td><span class="flex-row"><span class="avatar-sm ${urgente||vencida?'':'b'}">${initials(c.alunos?.nome||'?')}</span><strong>${c.alunos?.nome||'—'}</strong></span></td>
+        <td style="font-size:11px">${c.alunos?.empresa||'—'}</td>
+        <td>${c.curso_id?.includes('irata')?'🧗 IRATA':'🚒 Resgate'}</td>
+        <td style="font-size:10px;color:var(--text2)">${c.numero_certificado||'—'}</td>
+        <td style="font-weight:600;color:${vencida?'var(--red)':urgente?'var(--red)':atencao?'var(--orange)':'var(--text)'}">${fmtDate(c.data_vencimento)}</td>
+        <td><span class="badge ${vencida?'badge-red':urgente?'badge-red':atencao?'badge-orange':'badge-green'}">${vencida?'Vencida':dias+'d'}</span></td>
+        <td><span class="badge ${c.status==='Ativa'?'badge-green':'badge-red'}">${c.status||'—'}</span></td>
+        <td>${c.alunos?.whatsapp?`<button class="btn btn-whatsapp btn-sm" onclick="sendWhatsApp('${esc(c.alunos.whatsapp)}','${esc(c.alunos.nome||'')}','${c.data_vencimento||''}')">📱 Renovar</button>`:'—'}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+// ══ EXPORTAR CSV ══
+function exportarCSV(){
+  if(!relData?.length){ showToast('⚠️','Carregue um relatório primeiro!','error'); return; }
+  const tipo = $('rel-tipo')?.value || 'relatorio';
+  const nomes = {'contas_receber':'Contas_a_Receber','notas_fiscais':'Notas_Fiscais','receita_curso':'Receita_por_Curso','certs_vencendo':'Certs_Vencendo'};
+  const header = Object.keys(relData[0]).join(';');
+  const rows = relData.map(r=>Object.values(r).map(v=>
+    typeof v==='number'?String(v).replace('.',','):'"'+String(v||'').replace(/"/g,'""')+'"'
+  ).join(';'));
+  const csv = '﻿' + header + '
+' + rows.join('
+'); // BOM para Excel BR
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `Alpiend_${nomes[tipo]||'Relatorio'}_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥', 'CSV exportado! Abrindo no Excel...');
+}
+
 
 // ── INIT ──
 setTab('overview');
