@@ -275,7 +275,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
               <div style="background:var(--surface2);border-radius:7px;padding:9px;text-align:center"><div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:var(--green)">R$3.100</div><div style="font-size:9px;color:var(--text2)">Por Aluno</div></div>
             </div>
             <p style="font-size:11px;color:var(--text2);line-height:1.6">Certificação internacional IRATA reconhecida mundialmente. Níveis 1, 2 e 3 para trabalho em altura com acesso por cordas.</p>
-            <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><span class="chip">Nível 1</span><span class="chip">Nível 2</span><span class="chip">Nível 3</span><span class="chip">Presencial</span></div>
+            <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><span class="chip">N1 · 40h</span><span class="chip">N2 · 40h</span><span class="chip">N3 · 48h</span><span class="chip">Upgrade N1→N2: 12m</span><span class="chip">Upgrade N2→N3: 30m</span><span class="chip">Presencial</span></div>
           </div>
         </div>
         <div class="card" style="border:1px solid rgba(52,152,219,.3)">
@@ -303,11 +303,11 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
           <div class="card-header"><span class="card-title">🧗 Acesso por Cordas — IRATA</span><span class="badge badge-accent">Internacional</span></div>
           <div class="card-body">
             <div style="display:flex;flex-direction:column;gap:7px">
-              <div style="background:var(--surface2);border-left:3px solid var(--green);border-radius:0 7px 7px 0;padding:9px"><div style="font-size:12px;font-weight:700">Nível 1 — Técnico em Cordas · 16h</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Fundamentos, nós, equipamentos e segurança básica</div></div>
-              <div style="background:var(--surface2);border-left:3px solid var(--orange);border-radius:0 7px 7px 0;padding:9px"><div style="font-size:12px;font-weight:700">Nível 2 — Técnico Operacional · 14h</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Ancoragem, descida e subida controlada avançada</div></div>
-              <div style="background:var(--surface2);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;padding:9px"><div style="font-size:12px;font-weight:700">Nível 3 — Supervisor / Resgatador · 10h</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Liderança, planejamento e resgate de emergência</div></div>
+              <div style="background:var(--surface2);border-left:3px solid var(--green);border-radius:0 7px 7px 0;padding:9px"><div style="font-size:12px;font-weight:700">Nível 1 · 40h</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Fundamentos, técnicas de acesso, nós, equipamentos e segurança básica</div></div>
+              <div style="background:var(--surface2);border-left:3px solid var(--orange);border-radius:0 7px 7px 0;padding:9px"><div style="font-size:12px;font-weight:700">Nível 2 · 40h</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Ancoragem, descida e subida controlada avançada · <strong style="color:var(--orange)">Upgrade Nível 1→2: 12 meses</strong></div></div>
+              <div style="background:var(--surface2);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;padding:9px"><div style="font-size:12px;font-weight:700">Nível 3 · 48h</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Liderança, planejamento e resgate de emergência</div></div>
             </div>
-            <div style="margin-top:12px;padding:9px;background:rgba(245,166,35,.07);border-radius:7px;font-size:11px;color:var(--text2)">⚠️ Renovação: <strong style="color:var(--accent)">2 anos (Nível 1) · 3 anos (Níveis 2 e 3)</strong></div>
+            <div style="margin-top:12px;padding:9px;background:rgba(245,166,35,.07);border-radius:7px;font-size:11px;color:var(--text2)">⚠️ Renovação: <strong style="color:var(--accent)">2 anos (Nível 1) · 3 anos (Níveis 2 e 3)</strong> &nbsp;|&nbsp; 🔼 Upgrade N1→N2: <strong style="color:var(--orange)">12 meses</strong> &nbsp;|&nbsp; Upgrade N2→N3: <strong style="color:var(--accent)">30 meses</strong></div>
           </div>
         </div>
         <div class="card">
@@ -444,6 +444,45 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
       </div>
     </div>
 
+
+    <!-- ══ RELATÓRIOS ══ -->
+    <div class="panel" id="panel-relatorios">
+
+      <!-- FILTROS GLOBAIS -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header">
+          <span class="card-title">🔍 Filtros</span>
+          <div class="flex-row" style="flex-wrap:wrap;gap:8px">
+            <select class="form-select" id="rel-tipo" style="width:200px;font-size:12px" onchange="loadRelatorios()">
+              <option value="contas_receber">💰 Contas a Receber</option>
+              <option value="notas_fiscais">🧾 Notas Fiscais por Empresa</option>
+              <option value="receita_curso">📚 Receita por Curso</option>
+              <option value="certs_vencendo">🏆 Certificações Vencendo</option>
+            </select>
+            <input class="form-input" id="rel-data-ini" type="date" style="width:145px;font-size:12px" onchange="loadRelatorios()">
+            <input class="form-input" id="rel-data-fim" type="date" style="width:145px;font-size:12px" onchange="loadRelatorios()">
+            <button class="btn btn-ghost btn-sm" onclick="limparFiltros()">🔄 Limpar</button>
+            <button class="btn btn-success btn-sm" onclick="exportarCSV()">📥 Exportar CSV</button>
+            <button class="btn btn-ghost btn-sm" onclick="imprimirRelatorio()">🖨️ Imprimir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARDS SUMÁRIO -->
+      <div class="stats-grid" id="rel-stats" style="margin-bottom:14px"></div>
+
+      <!-- TABELA -->
+      <div class="card" id="rel-card">
+        <div class="card-header">
+          <span class="card-title" id="rel-titulo">Selecione um relatório</span>
+          <span class="badge badge-gray" id="rel-total-badge">0 registros</span>
+        </div>
+        <div style="overflow-x:auto" id="rel-table-wrap">
+          <div class="loading">⏳ Selecione um relatório acima</div>
+        </div>
+      </div>
+
+    </div><!-- /panel-relatorios -->
   </div><!-- /content -->
 </main>
 
@@ -751,47 +790,6 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
     </div>
   </div>
 </div>
-
-
-    <!-- ══ RELATÓRIOS ══ -->
-    <div class="panel" id="panel-relatorios">
-
-      <!-- FILTROS GLOBAIS -->
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-header">
-          <span class="card-title">🔍 Filtros</span>
-          <div class="flex-row" style="flex-wrap:wrap;gap:8px">
-            <select class="form-select" id="rel-tipo" style="width:200px;font-size:12px" onchange="loadRelatorios()">
-              <option value="contas_receber">💰 Contas a Receber</option>
-              <option value="notas_fiscais">🧾 Notas Fiscais por Empresa</option>
-              <option value="receita_curso">📚 Receita por Curso</option>
-              <option value="certs_vencendo">🏆 Certificações Vencendo</option>
-            </select>
-            <input class="form-input" id="rel-data-ini" type="date" style="width:145px;font-size:12px" onchange="loadRelatorios()">
-            <input class="form-input" id="rel-data-fim" type="date" style="width:145px;font-size:12px" onchange="loadRelatorios()">
-            <button class="btn btn-ghost btn-sm" onclick="limparFiltros()">🔄 Limpar</button>
-            <button class="btn btn-success btn-sm" onclick="exportarCSV()">📥 Exportar CSV</button>
-            <button class="btn btn-ghost btn-sm" onclick="imprimirRelatorio()">🖨️ Imprimir / PDF</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- SUMÁRIO CARDS -->
-      <div class="stats-grid" id="rel-stats" style="margin-bottom:14px"></div>
-
-      <!-- TABELA RELATÓRIO -->
-      <div class="card" id="rel-card">
-        <div class="card-header">
-          <span class="card-title" id="rel-titulo">💰 Contas a Receber</span>
-          <span class="badge badge-gray" id="rel-total-badge">0 registros</span>
-        </div>
-        <div style="overflow-x:auto" id="rel-table-wrap">
-          <div class="loading">Selecione um relatório e clique em filtrar</div>
-        </div>
-      </div>
-
-    </div><!-- /panel-relatorios -->
-
 <!-- TOAST -->
 <div class="toast" id="toast"><span id="toast-icon">✅</span><span id="toast-msg">Mensagem</span></div>
 
@@ -1029,7 +1027,7 @@ async function loadTurmas(){
   if(!data?.length){tb.innerHTML='<tr><td colspan="9"><div class="empty-state"><div class="icon">📅</div><p>Nenhuma turma cadastrada</p></div></td></tr>';return;}
   tb.innerHTML=data.map(t=>`<tr>
     <td><strong>${t.nome}</strong></td>
-    <td><span class="chip">${t.nome?.toLowerCase().includes('irata')||t.nome?.toLowerCase().includes('corda')?'🧗 IRATA':'🚒 Resgate'}</span></td>
+    <td><span class="chip">${t.curso||( t.nome?.toLowerCase().includes('irata')||t.nome?.toLowerCase().includes('corda')?'🧗 Acesso por Cordas — IRATA':'🚒 Resgate Técnico Industrial')}</span></td>
     <td>${fmtDate(t.data_inicio)}</td><td>${fmtDate(t.data_fim)}</td>
     <td style="font-size:11px;color:var(--text2)">${t.horario||'—'}</td>
     <td>${t.vagas||'—'}</td><td style="font-size:11px">${t.local||'—'}</td>
@@ -1044,7 +1042,7 @@ async function editarTurma(id){
   const {data}=await sb.from('turmas').select('*').eq('id',id).single();
   if(!data)return;
   editingTurmaId=id;
-  $('t-nome').value=data.nome||''; $('t-curso').value=data.nome?.includes('IRATA')?'Acesso por Cordas — IRATA':'Resgate Técnico Industrial';
+  $('t-nome').value=data.nome||''; $('t-curso').value=data.curso||'';
   $('t-inicio').value=data.data_inicio||''; $('t-fim').value=data.data_fim||'';
   $('t-horario').value=data.horario||''; $('t-local').value=data.local||'';
   $('t-vagas').value=data.vagas||15; $('t-status').value=data.status||'Aberta';
@@ -1055,7 +1053,7 @@ function fecharTurma(){editingTurmaId=null;closeModal('turmaModal');}
 async function salvarTurma(){
   const nome=$('t-nome')?.value?.trim();
   if(!nome){showToast('⚠️','Preencha o nome da turma!','error');return;}
-  const payload={nome,data_inicio:$('t-inicio').value||null,data_fim:$('t-fim').value||null,horario:$('t-horario').value||null,local:$('t-local').value||null,vagas:parseInt($('t-vagas').value)||15,status:$('t-status').value||'Aberta'};
+  const payload={nome,curso:$('t-curso')?.value||null,data_inicio:$('t-inicio').value||null,data_fim:$('t-fim').value||null,horario:$('t-horario').value||null,local:$('t-local').value||null,vagas:parseInt($('t-vagas').value)||15,status:$('t-status').value||'Aberta'};
   let error;
   if(editingTurmaId){({error}=await sb.from('turmas').update(payload).eq('id',editingTurmaId));}
   else{({error}=await sb.from('turmas').insert([payload]));}
@@ -1152,7 +1150,7 @@ async function criarTurmaESelecionar(){
   if(!nome){ showToast('⚠️','Preencha o nome da turma!','error'); return; }
   const curso=$('m-curso')?.value||null;
   const payload={
-    nome, status:$('nt-status')?.value||'Aberta',
+    nome, curso:curso||null, status:$('nt-status')?.value||'Aberta',
     data_inicio:$('nt-inicio')?.value||null,
     data_fim:$('nt-fim')?.value||null,
     horario:$('nt-horario')?.value||null,
