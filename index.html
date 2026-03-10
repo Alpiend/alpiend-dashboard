@@ -715,7 +715,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
         <div class="form-group full"><label class="form-label">Aluno *</label><select class="form-select" id="c-aluno"></select></div>
         <div class="form-group full"><label class="form-label">Certificação *</label>
           <select class="form-select" id="c-curso">
-            <option value="irata1">🧗 Acesso por Cordas IRATA — Nível 1</option>
+            <option value="irata1" selected>🧗 Acesso por Cordas IRATA — Nível 1</option>
             <option value="irata2">🧗 Acesso por Cordas IRATA — Nível 2</option>
             <option value="irata3">🧗 Acesso por Cordas IRATA — Nível 3</option>
             <option value="resgate">🚒 Resgate Técnico Industrial</option>
@@ -1499,22 +1499,27 @@ let editingCertId=null;
 async function abrirCadastroCert(){
   editingCertId=null;
   ['c-num','c-emissao','c-aprovacao','c-nota','c-venc'].forEach(id=>{const el=$(id);if(el)el.value='';});
-  if($('c-aluno'))$('c-aluno').value='';
-  if($('c-curso'))$('c-curso').value='irata1';
   if($('c-status'))$('c-status').value='Ativa';
   $('certModalTitle').textContent='🏆 Nova Certificação';
   $('certSaveBtn').textContent='✅ Emitir Certificação';
+  // Carregar alunos PRIMEIRO, depois setar os selects
   await loadAlunos();
+  if($('c-aluno'))$('c-aluno').value='';
+  if($('c-curso'))$('c-curso').value='irata1';
   openModal('certModal');
 }
 async function editarCert(id){
   const {data}=await sb.from('certificacoes').select('*').eq('id',id).single();
   if(!data)return;
   editingCertId=id;
-  // carregar alunos ANTES de setar o select
+  // carregar alunos PRIMEIRO, depois setar os selects
   await loadAlunos();
   if($('c-aluno'))$('c-aluno').value=data.aluno_id||'';
-  if($('c-curso'))$('c-curso').value=data.tipo_curso||data.curso_id||'';
+  // setar c-curso com setTimeout para garantir que o DOM estabilizou
+  const tipoCursoVal=data.tipo_curso||'';
+  if($('c-curso'))$('c-curso').value=tipoCursoVal;
+  // forçar o valor correto após microtask
+  setTimeout(()=>{ if($('c-curso')&&tipoCursoVal) $('c-curso').value=tipoCursoVal; },0);
   $('c-num').value=data.numero_certificado||'';
   $('c-emissao').value=data.data_emissao||'';
   $('c-aprovacao').value=data.data_aprovacao||'';
@@ -1537,10 +1542,12 @@ async function salvarCert(){
   const nota=notaRaw?parseFloat(notaRaw):null;
   const aprovacaoRaw=$('c-aprovacao')?.value?.trim();
   const emissaoRaw=$('c-emissao')?.value?.trim();
+  const tipoCurso=$('c-curso')?.value||null;
+  console.log('tipo_curso selecionado:', tipoCurso, '| selectedIndex:', $('c-curso')?.selectedIndex);
   const payload={
     aluno_id,
     curso_id:null,
-    tipo_curso:$('c-curso')?.value||null,
+    tipo_curso:tipoCurso,
     numero_certificado:$('c-num')?.value?.trim()||null,
     data_emissao:emissaoRaw||null,
     data_aprovacao:aprovacaoRaw||null,
