@@ -1588,7 +1588,8 @@ async function loadCerts(){
     const vencida=dias!=null&&dias<0;
     const nome=c.alunos?.nome||'—';
     const wpp=c.alunos?.whatsapp||'';
-    const certNome=c.curso_id?.includes('irata')?'🧗 IRATA':'🚒 Resgate';
+    const certTipo=c.tipo_curso||c.curso_id||'';
+    const certNome=certTipo==='irata1'?'🧗 IRATA Nível 1':certTipo==='irata2'?'🧗 IRATA Nível 2':certTipo==='irata3'?'🧗 IRATA Nível 3':certTipo==='resgate'?'🚒 Resgate Técnico':certTipo?.includes?.('irata')?'🧗 IRATA':'🚒 Resgate';
     const notaColor=c.nota_aprovacao>=7?'var(--green)':c.nota_aprovacao>=5?'var(--orange)':'var(--red)';
     return `<tr ${urgente?'style="background:rgba(231,76,60,.04)"':''}>
       <td><span class="flex-row"><span class="avatar-sm ${urgente?'':'b'}">${initials(nome)}</span>${nome}</span></td>
@@ -1751,7 +1752,7 @@ async function loadKPIs(){
   // índice por curso
   const grupos={};
   certs.forEach(c=>{
-    const k=c.curso_id?.includes('irata')?'🧗 Acesso por Cordas — IRATA':'🚒 Resgate Técnico Industrial';
+    const k=(c.tipo_curso||c.curso_id||'').includes('irata')?'🧗 Acesso por Cordas — IRATA':'🚒 Resgate Técnico Industrial';
     if(!grupos[k])grupos[k]={total:0,comNota:0,soma:0};
     grupos[k].total++;
     if(c.nota_aprovacao!=null){grupos[k].comNota++;grupos[k].soma+=c.nota_aprovacao;}
@@ -1789,7 +1790,7 @@ async function loadKPIs(){
     const badge=nota>=7?'badge-green':'badge-red';
     return `<tr>
       <td><span class="flex-row"><span class="avatar-sm">${initials(c.alunos?.nome||'?')}</span>${c.alunos?.nome||'—'}</span></td>
-      <td>${c.curso_id?.includes('irata')?'🧗 IRATA':'🚒 Resgate'}</td>
+      <td>${(c.tipo_curso||c.curso_id||'').includes('irata')?'🧗 IRATA':'🚒 Resgate'}</td>
       <td>${fmtDate(c.data_aprovacao)}</td>
       <td style="font-size:18px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:${color}">${nota.toFixed(1)}</td>
       <td><span class="badge ${badge}">${status}</span></td>
@@ -2132,7 +2133,7 @@ async function relCertsVencendo(ini, fim){
   relData = lista.map(c=>({
     'Aluno': c.alunos?.nome||'—',
     'Empresa': c.alunos?.empresa||'—',
-    'Certificação': c.curso_id?.includes('irata')?'IRATA':'Resgate',
+    'Certificação': (c.tipo_curso||c.curso_id||'').includes('irata')?'IRATA':'Resgate',
     'Nº Cert.': c.numero_certificado||'—',
     'Emissão': fmtDate(c.data_emissao),
     'Aprovação': fmtDate(c.data_aprovacao),
@@ -2160,7 +2161,7 @@ async function relCertsVencendo(ini, fim){
       return `<tr ${urgente||vencida?'style="background:rgba(231,76,60,.04)"':''}>
         <td><span class="flex-row"><span class="avatar-sm ${urgente||vencida?'':'b'}">${initials(c.alunos?.nome||'?')}</span><strong>${c.alunos?.nome||'—'}</strong></span></td>
         <td style="font-size:11px">${c.alunos?.empresa||'—'}</td>
-        <td>${c.curso_id?.includes('irata')?'🧗 IRATA':'🚒 Resgate'}</td>
+        <td>${(c.tipo_curso||c.curso_id||'').includes('irata')?'🧗 IRATA':'🚒 Resgate'}</td>
         <td style="font-size:10px;color:var(--text2)">${c.numero_certificado||'—'}</td>
         <td style="font-weight:600;color:${vencida?'var(--red)':urgente?'var(--red)':atencao?'var(--orange)':'var(--text)'}">${fmtDate(c.data_vencimento)}</td>
         <td><span class="badge ${vencida?'badge-red':urgente?'badge-red':atencao?'badge-orange':'badge-green'}">${vencida?'Vencida':dias+'d'}</span></td>
