@@ -208,6 +208,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
     <div class="nav-label">Estratégico</div>
     <div class="nav-item" onclick="setTab('kpis')">📈 KPIs & Aprovação</div>
     <div class="nav-item" onclick="setTab('relatorios')">📋 Relatórios</div>
+    <div class="nav-item" onclick="setTab('orcamentos')">📝 Orçamentos & Contratos</div>
   </div>
   <div class="sidebar-footer">
     <div class="user-card">
@@ -243,6 +244,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
       <div class="tab" onclick="setTab('crm')">🎯 CRM</div>
       <div class="tab" onclick="setTab('kpis')">📈 KPIs</div>
     <div class="tab" onclick="setTab('relatorios')">📋 Relatórios</div>
+    <div class="tab" onclick="setTab('orcamentos')">📝 Orçamentos</div>
     </div>
 
     <!-- ══ OVERVIEW ══ -->
@@ -833,6 +835,155 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
     </div>
   </div>
 </div>
+
+    <!-- ══ ORÇAMENTOS & CONTRATOS ══ -->
+    <div class="panel" id="panel-orcamentos">
+
+      <!-- CABEÇALHO -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header">
+          <span class="card-title">📝 Orçamentos & Contratos</span>
+          <div class="flex-row" style="gap:8px">
+            <button class="btn btn-primary" onclick="abrirModalOrcamento()">+ Novo Orçamento</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-grid" style="margin-bottom:14px" id="orc-stats">
+        <div class="stat-card"><div class="stat-icon">📝</div><div class="stat-value" id="orc-stat-total">0</div><div class="stat-label">Total</div></div>
+        <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value" id="orc-stat-pend" style="color:var(--orange)">0</div><div class="stat-label">Aguardando</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="orc-stat-aprov" style="color:var(--green)">0</div><div class="stat-label">Aprovados</div></div>
+        <div class="stat-card"><div class="stat-icon">📄</div><div class="stat-value" id="orc-stat-contrato" style="color:var(--blue)">0</div><div class="stat-label">Contratos Gerados</div></div>
+      </div>
+
+      <!-- TABELA -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Histórico</span>
+          <input class="form-input" id="orc-search" placeholder="🔍 Buscar cliente..." style="width:220px;font-size:12px" oninput="filtrarOrcamentos(this.value)">
+        </div>
+        <div style="overflow-x:auto">
+          <table class="table">
+            <thead><tr>
+              <th>Nº</th><th>Cliente / Empresa</th><th>Cursos</th><th>Alunos</th>
+              <th>Valor Total</th><th>Validade</th><th>Status</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="tb-orcamentos"><tr><td colspan="8"><div class="loading">⏳ Carregando...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /panel-orcamentos -->
+
+
+<!-- MODAL ORÇAMENTO -->
+<div class="modal-overlay" id="orcModal">
+  <div class="modal" style="max-width:720px;width:95vw">
+    <div class="modal-header">
+      <span class="modal-title" id="orcModalTitle">📝 Novo Orçamento</span>
+      <button class="btn btn-ghost btn-sm" onclick="fecharModalOrcamento()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- CLIENTE -->
+      <div style="background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.2);border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:8px">👤 CLIENTE</div>
+        <div class="form-grid">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Selecionar cadastrado</label>
+            <select class="form-select" id="orc-aluno-sel" onchange="preencherClienteOrcamento(this.value)">
+              <option value="">— Selecione ou preencha abaixo —</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Nome / Razão Social *</label>
+            <input class="form-input" id="orc-cliente" placeholder="Nome ou empresa">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">CNPJ / CPF</label>
+            <input class="form-input" id="orc-doc" placeholder="CNPJ ou CPF">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">E-mail</label>
+            <input class="form-input" id="orc-email" placeholder="contato@empresa.com">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">WhatsApp</label>
+            <input class="form-input" id="orc-wpp" placeholder="5511999990000">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Endereço</label>
+            <input class="form-input" id="orc-end" placeholder="Rua, nº, cidade — UF">
+          </div>
+        </div>
+      </div>
+
+      <!-- ITENS -->
+      <div style="background:rgba(41,128,185,.07);border:1px solid rgba(41,128,185,.2);border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:8px">📚 ITENS DO ORÇAMENTO</div>
+        <div id="orc-itens-lista">
+          <!-- itens adicionados dinamicamente -->
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="adicionarItemOrcamento()" style="margin-top:6px;width:100%">+ Adicionar Curso</button>
+      </div>
+
+      <!-- TOTAIS E CONDIÇÕES -->
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Desconto (%)</label>
+          <input class="form-input" id="orc-desconto" type="number" min="0" max="100" step="0.5" placeholder="0" oninput="recalcularOrcamento()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Forma de Pagamento</label>
+          <select class="form-select" id="orc-pagto">
+            <option>PIX</option><option>Boleto</option><option>Cartão de Crédito</option>
+            <option>Faturamento 30 dias</option><option>Faturamento 30/60 dias</option><option>À combinar</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Validade do Orçamento</label>
+          <input class="form-input" id="orc-validade" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="orc-status">
+            <option>Aguardando Aprovação</option>
+            <option>Aprovado</option>
+            <option>Recusado</option>
+            <option>Contrato Gerado</option>
+            <option>Cancelado</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Observações / Condições Especiais</label>
+          <textarea class="form-input" id="orc-obs" rows="2" placeholder="Condições especiais, descontos negociados, observações..."></textarea>
+        </div>
+      </div>
+
+      <!-- TOTAL CALCULADO -->
+      <div style="background:rgba(46,204,113,.07);border:1px solid rgba(46,204,113,.2);border-radius:8px;padding:12px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:11px;color:var(--text2)">Subtotal: <span id="orc-subtotal" style="font-weight:600;color:var(--text)">R$ 0,00</span></div>
+          <div style="font-size:11px;color:var(--text2)">Desconto: <span id="orc-desc-val" style="color:var(--red)">R$ 0,00</span></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--text2)">TOTAL</div>
+          <div style="font-size:26px;font-weight:900;color:var(--green)" id="orc-total-val">R$ 0,00</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
+      <button class="btn btn-ghost" onclick="fecharModalOrcamento()">Cancelar</button>
+      <button class="btn btn-ghost btn-sm" onclick="salvarOrcamento('Aguardando Aprovação')">💾 Salvar Rascunho</button>
+      <button class="btn btn-primary" id="orcSaveBtn" onclick="salvarOrcamento()">✅ Salvar Orçamento</button>
+      <button class="btn btn-success" id="orcGerarBtn" onclick="gerarDocumento('orcamento')" style="display:none">📄 Gerar PDF Orçamento</button>
+      <button class="btn btn-blue" id="orcContratoBtn" onclick="gerarDocumento('contrato')" style="display:none">📋 Gerar Contrato</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"><span id="toast-icon">✅</span><span id="toast-msg">Mensagem</span></div>
 
@@ -868,7 +1019,7 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 });
 
 // ── TABS ──
-const pageTitles={overview:'Visão Geral — Alpiend',cursos:'Cursos & Turmas',alunos:'Gestão de Alunos',calendar:'Calendário de Turmas',cert:'Controle de Certificações',presenca:'Controle de Presença',financeiro:'Financeiro & Vendas',crm:'CRM — Leads & Prospecção',kpis:'KPIs & Índice de Aprovação',relatorios:'Relatórios — Contas & Notas Fiscais'};
+const pageTitles={overview:'Visão Geral — Alpiend',cursos:'Cursos & Turmas',alunos:'Gestão de Alunos',calendar:'Calendário de Turmas',cert:'Controle de Certificações',presenca:'Controle de Presença',financeiro:'Financeiro & Vendas',crm:'CRM — Leads & Prospecção',kpis:'KPIs & Índice de Aprovação',relatorios:'Relatórios — Contas & Notas Fiscais',orcamentos:'Orçamentos & Contratos'};
 function setTab(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -885,6 +1036,7 @@ function setTab(id){
   if(id==='financeiro') loadFinanceiro();
   if(id==='kpis') loadKPIs();
   if(id==='relatorios') loadRelatorios();
+  if(id==='orcamentos') loadOrcamentos();
   if(id==='cursos') loadTurmas();
 }
 
@@ -1362,7 +1514,7 @@ async function editarCert(id){
   // carregar alunos ANTES de setar o select
   await loadAlunos();
   if($('c-aluno'))$('c-aluno').value=data.aluno_id||'';
-  if($('c-curso'))$('c-curso').value=data.curso_id||'';
+  if($('c-curso'))$('c-curso').value=data.tipo_curso||data.curso_id||'';
   $('c-num').value=data.numero_certificado||'';
   $('c-emissao').value=data.data_emissao||'';
   $('c-aprovacao').value=data.data_aprovacao||'';
@@ -1387,7 +1539,8 @@ async function salvarCert(){
   const emissaoRaw=$('c-emissao')?.value?.trim();
   const payload={
     aluno_id,
-    curso_id:$('c-curso')?.value||null,
+    curso_id:null,
+    tipo_curso:$('c-curso')?.value||null,
     numero_certificado:$('c-num')?.value?.trim()||null,
     data_emissao:emissaoRaw||null,
     data_aprovacao:aprovacaoRaw||null,
@@ -2036,6 +2189,359 @@ function togglePJFields(){
   const isPJ=document.querySelector('input[name="a-tipo-pessoa"]:checked')?.value==='PJ';
   if($('pj-fields'))$('pj-fields').style.display=isPJ?'block':'none';
   if($('pf-cargo-field'))$('pf-cargo-field').style.display=isPJ?'none':'block';
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// ── ORÇAMENTOS & CONTRATOS ──
+// ══════════════════════════════════════════════════════════════════
+
+let editingOrcId = null;
+let orcItensCount = 0;
+let orcamentosCache = [];
+
+async function loadOrcamentos() {
+  const {data, error} = await sb.from('orcamentos')
+    .select('*').order('created_at', {ascending: false});
+  if (error) {
+    if($('tb-orcamentos')) $('tb-orcamentos').innerHTML = '<tr><td colspan="8"><div class="loading">❌ Erro: ' + error.message + '</div></td></tr>';
+    return;
+  }
+  orcamentosCache = data || [];
+  renderOrcamentos(orcamentosCache);
+  const total    = orcamentosCache.length;
+  const pend     = orcamentosCache.filter(o => o.status === 'Aguardando Aprovação').length;
+  const aprov    = orcamentosCache.filter(o => o.status === 'Aprovado').length;
+  const contrato = orcamentosCache.filter(o => o.status === 'Contrato Gerado').length;
+  if($('orc-stat-total'))    $('orc-stat-total').textContent    = total;
+  if($('orc-stat-pend'))     $('orc-stat-pend').textContent     = pend;
+  if($('orc-stat-aprov'))    $('orc-stat-aprov').textContent    = aprov;
+  if($('orc-stat-contrato')) $('orc-stat-contrato').textContent = contrato;
+}
+
+function renderOrcamentos(lista) {
+  const tb = $('tb-orcamentos'); if(!tb) return;
+  if(!lista.length){
+    tb.innerHTML='<tr><td colspan="8"><div class="empty-state"><div class="icon">📝</div><p>Nenhum orçamento ainda. Clique em "+ Novo Orçamento" para começar.</p></div></td></tr>';
+    return;
+  }
+  tb.innerHTML = lista.map(o => {
+    const itens = (() => { try { return JSON.parse(o.itens||'[]'); } catch { return []; }})();
+    const cursos = itens.map(i=>i.curso).filter(Boolean).join(', ')||'—';
+    const totalAlunos = itens.reduce((s,i)=>s+(parseInt(i.qtd)||0),0);
+    const sc = o.status==='Aprovado'?'badge-green':o.status==='Contrato Gerado'?'badge-blue':o.status==='Recusado'||o.status==='Cancelado'?'badge-red':'badge-orange';
+    const vencido = o.validade && diffDays(o.validade)<0 && o.status==='Aguardando Aprovação';
+    return `<tr ${vencido?'style="opacity:.6"':''}>
+      <td style="font-family:monospace;font-size:11px;color:var(--accent)">#${String(o.numero||'').padStart(4,'0')}</td>
+      <td><strong>${o.cliente||'—'}</strong><div style="font-size:10px;color:var(--text3)">${o.doc||''}</div></td>
+      <td style="font-size:11px;max-width:160px;color:var(--text2)">${cursos}</td>
+      <td style="text-align:center"><span class="badge badge-gray">${totalAlunos}</span></td>
+      <td style="font-weight:700;color:var(--green)">${fmt(o.total||0)}</td>
+      <td style="font-size:11px;color:${vencido?'var(--red)':'var(--text2)'}">${o.validade?fmtDate(o.validade):'—'}${vencido?' ⚠️':''}</td>
+      <td><span class="badge ${sc}">${o.status||'—'}</span></td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="editarOrcamento('${o.id}')">✏️</button>
+          <button class="btn btn-ghost btn-sm" onclick="gerarDocumentoById('${o.id}','orcamento')" title="PDF Orçamento">📄</button>
+          ${o.status==='Aprovado'||o.status==='Contrato Gerado'?`<button class="btn btn-ghost btn-sm" onclick="gerarDocumentoById('${o.id}','contrato')" title="Gerar Contrato">📋</button>`:''}
+          ${o.status==='Aguardando Aprovação'?`<button class="btn btn-success btn-sm" onclick="aprovarOrcamento('${o.id}')" title="Aprovar">✅</button>`:''}
+          <button class="btn btn-danger btn-sm" onclick="excluirOrcamento('${o.id}','${esc(o.cliente||'')}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filtrarOrcamentos(q) {
+  const f = q.toLowerCase();
+  renderOrcamentos(orcamentosCache.filter(o =>
+    (o.cliente||'').toLowerCase().includes(f) ||
+    (o.doc||'').toLowerCase().includes(f) ||
+    String(o.numero||'').includes(f)
+  ));
+}
+
+async function abrirModalOrcamento() {
+  editingOrcId = null; orcItensCount = 0;
+  $('orcModalTitle').textContent = '📝 Novo Orçamento';
+  $('orcSaveBtn').textContent = '✅ Salvar Orçamento';
+  if($('orcGerarBtn'))    $('orcGerarBtn').style.display = 'none';
+  if($('orcContratoBtn')) $('orcContratoBtn').style.display = 'none';
+  ['orc-cliente','orc-doc','orc-email','orc-wpp','orc-end','orc-obs','orc-desconto'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  if($('orc-pagto'))  $('orc-pagto').value  = 'PIX';
+  if($('orc-status')) $('orc-status').value = 'Aguardando Aprovação';
+  if($('orc-aluno-sel')) $('orc-aluno-sel').value = '';
+  const val=new Date(); val.setDate(val.getDate()+15);
+  if($('orc-validade')) $('orc-validade').value = val.toISOString().split('T')[0];
+  $('orc-itens-lista').innerHTML = '';
+  adicionarItemOrcamento();
+  await loadAlunos();
+  recalcularOrcamento();
+  openModal('orcModal');
+}
+
+function adicionarItemOrcamento() {
+  orcItensCount++;
+  const id = 'orc-item-' + orcItensCount;
+  const div = document.createElement('div');
+  div.className = 'orc-item'; div.id = id;
+  div.innerHTML = `
+    <select class="form-select" style="font-size:12px">
+      <option value="">Selecione o curso...</option>
+      <option value="Acesso por Cordas — IRATA Nível 1" data-val="3100">🧗 IRATA Nível 1 · 40h</option>
+      <option value="Acesso por Cordas — IRATA Nível 2" data-val="3100">🧗 IRATA Nível 2 · 40h</option>
+      <option value="Acesso por Cordas — IRATA Nível 3" data-val="3100">🧗 IRATA Nível 3 · 48h</option>
+      <option value="Resgate Técnico Industrial" data-val="1200">🚒 Resgate Técnico · 24h</option>
+      <option value="Outro" data-val="0">✏️ Outro (preencher)</option>
+    </select>
+    <input class="form-input" type="number" min="1" value="1" placeholder="Alunos" style="font-size:12px;text-align:center">
+    <input class="form-input" type="number" min="0" step="0.01" placeholder="Valor unit." style="font-size:12px;text-align:right">
+    <button class="btn btn-danger btn-sm" style="padding:4px 8px" onclick="document.getElementById('${id}').remove();recalcularOrcamento()">✕</button>`;
+  div.querySelector('select').addEventListener('change', function(){
+    const v = this.options[this.selectedIndex].getAttribute('data-val');
+    if(v && v!=='0') div.querySelectorAll('input')[1].value = v;
+    recalcularOrcamento();
+  });
+  div.querySelectorAll('input').forEach(i=>i.addEventListener('input', recalcularOrcamento));
+  $('orc-itens-lista').appendChild(div);
+}
+
+function recalcularOrcamento() {
+  let sub = 0;
+  document.querySelectorAll('.orc-item').forEach(div=>{
+    const inputs = div.querySelectorAll('input');
+    sub += (parseFloat(inputs[0]?.value)||0) * (parseFloat(inputs[1]?.value)||0);
+  });
+  const desc = parseFloat($('orc-desconto')?.value||0)||0;
+  const dv = sub * desc / 100;
+  const total = sub - dv;
+  if($('orc-subtotal')) $('orc-subtotal').textContent = fmt(sub);
+  if($('orc-desc-val')) $('orc-desc-val').textContent = '- '+fmt(dv);
+  if($('orc-total-val')) $('orc-total-val').textContent = fmt(total);
+  return {sub, dv, total};
+}
+
+function coletarItens() {
+  const itens = [];
+  document.querySelectorAll('.orc-item').forEach(div=>{
+    const curso = div.querySelector('select')?.value||'';
+    const inputs = div.querySelectorAll('input');
+    const qtd   = parseFloat(inputs[0]?.value)||1;
+    const vunit = parseFloat(inputs[1]?.value)||0;
+    if(curso) itens.push({curso, qtd, valor_unit:vunit, subtotal:qtd*vunit});
+  });
+  return itens;
+}
+
+async function salvarOrcamento(statusOverride) {
+  const cliente = $('orc-cliente')?.value?.trim();
+  if(!cliente){showToast('⚠️','Preencha o nome do cliente!','error');return;}
+  const itens = coletarItens();
+  if(!itens.length){showToast('⚠️','Adicione pelo menos um curso!','error');return;}
+  const {sub, dv, total} = recalcularOrcamento();
+  const payload = {
+    cliente,
+    doc:            $('orc-doc')?.value||null,
+    email:          $('orc-email')?.value||null,
+    whatsapp:       $('orc-wpp')?.value||null,
+    endereco:       $('orc-end')?.value||null,
+    itens:          JSON.stringify(itens),
+    desconto:       parseFloat($('orc-desconto')?.value||0)||0,
+    subtotal:       sub,
+    total,
+    forma_pagamento:$('orc-pagto')?.value||null,
+    validade:       $('orc-validade')?.value||null,
+    status:         statusOverride||$('orc-status')?.value||'Aguardando Aprovação',
+    observacoes:    $('orc-obs')?.value||null,
+    aluno_id:       $('orc-aluno-sel')?.value||null,
+  };
+  let result;
+  if(editingOrcId){
+    result = await sb.from('orcamentos').update(payload).eq('id',editingOrcId);
+  } else {
+    const {data:last} = await sb.from('orcamentos').select('numero').order('numero',{ascending:false}).limit(1).maybeSingle();
+    payload.numero = (last?.numero||0)+1;
+    result = await sb.from('orcamentos').insert([payload]);
+  }
+  if(result.error){showToast('❌','Erro: '+result.error.message,'error');return;}
+  fecharModalOrcamento();
+  showToast('✅', editingOrcId?'Orçamento atualizado!':'Orçamento #'+String(payload.numero).padStart(4,'0')+' criado!');
+  loadOrcamentos();
+}
+
+async function editarOrcamento(id) {
+  const {data} = await sb.from('orcamentos').select('*').eq('id',id).single();
+  if(!data) return;
+  editingOrcId = id;
+  $('orcModalTitle').textContent = '✏️ Editar Orçamento #'+String(data.numero||'').padStart(4,'0');
+  $('orcSaveBtn').textContent = '💾 Atualizar';
+  if($('orcGerarBtn'))    $('orcGerarBtn').style.display    = 'inline-flex';
+  if($('orcContratoBtn')) $('orcContratoBtn').style.display = (data.status==='Aprovado'||data.status==='Contrato Gerado')?'inline-flex':'none';
+  $('orc-cliente').value   = data.cliente||'';
+  $('orc-doc').value       = data.doc||'';
+  $('orc-email').value     = data.email||'';
+  $('orc-wpp').value       = data.whatsapp||'';
+  $('orc-end').value       = data.endereco||'';
+  $('orc-obs').value       = data.observacoes||'';
+  $('orc-desconto').value  = data.desconto||'';
+  $('orc-pagto').value     = data.forma_pagamento||'PIX';
+  $('orc-validade').value  = data.validade||'';
+  $('orc-status').value    = data.status||'Aguardando Aprovação';
+  $('orc-itens-lista').innerHTML = ''; orcItensCount = 0;
+  const itens = (() => { try { return JSON.parse(data.itens||'[]'); } catch { return []; }})();
+  (itens.length ? itens : [{}]).forEach(item => {
+    adicionarItemOrcamento();
+    const div = $('orc-itens-lista').lastElementChild;
+    if(!div) return;
+    if(item.curso) div.querySelector('select').value = item.curso;
+    const inputs = div.querySelectorAll('input');
+    if(inputs[0]) inputs[0].value = item.qtd||1;
+    if(inputs[1]) inputs[1].value = item.valor_unit||0;
+  });
+  await loadAlunos();
+  if($('orc-aluno-sel')&&data.aluno_id) $('orc-aluno-sel').value = data.aluno_id;
+  recalcularOrcamento();
+  openModal('orcModal');
+}
+
+async function aprovarOrcamento(id) {
+  const {error} = await sb.from('orcamentos').update({status:'Aprovado'}).eq('id',id);
+  if(error){showToast('❌','Erro: '+error.message,'error');return;}
+  showToast('✅','Orçamento aprovado! Agora você pode gerar o contrato. 📋');
+  loadOrcamentos();
+}
+
+async function excluirOrcamento(id, nome) {
+  if(!confirm('Excluir orçamento de "'+nome+'"?')) return;
+  const {error} = await sb.from('orcamentos').delete().eq('id',id);
+  if(error){showToast('❌','Erro: '+error.message,'error');return;}
+  showToast('🗑️','Orçamento excluído!'); loadOrcamentos();
+}
+
+function fecharModalOrcamento() { editingOrcId=null; closeModal('orcModal'); }
+
+function preencherClienteOrcamento(id) {
+  if(!id) return;
+  sb.from('alunos').select('*').eq('id',id).single().then(({data})=>{
+    if(!data) return;
+    if($('orc-cliente')) $('orc-cliente').value = data.empresa||data.nome||'';
+    if($('orc-doc'))     $('orc-doc').value     = data.notas_fiscais||data.cpf||'';
+    if($('orc-email'))   $('orc-email').value   = data.email||'';
+    if($('orc-wpp'))     $('orc-wpp').value     = data.whatsapp||'';
+    if($('orc-end'))     $('orc-end').value     = data.endereco||'';
+  });
+}
+
+async function gerarDocumentoById(id, tipo) {
+  const {data} = await sb.from('orcamentos').select('*').eq('id',id).single();
+  if(data) gerarPDF(data, tipo);
+}
+
+function gerarDocumento(tipo) {
+  if(editingOrcId){
+    sb.from('orcamentos').select('*').eq('id',editingOrcId).single().then(({data})=>{ if(data) gerarPDF(data,tipo); });
+  }
+}
+
+function gerarPDF(orc, tipo) {
+  const LOGO = 'data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCABWAF4DASIAAhEBAxEB/8QAHQAAAgIDAQEBAAAAAAAAAAAAAAgFBgMEBwkCAf/EADgQAAEDAwIEBAQDBgcAAAAAAAECAwQABREGIQcSMUETUWFxCCKBkRShwRUjJGKx0RYyUnLh8PH/xAAbAQACAwEBAQAAAAAAAAAAAAAEBQADBgECB//EAC4RAAEDAgQGAAQHAAAAAAAAAAEAAgMEEQUSITEGEyJBUWEjcdHwFBUygaGx4f/aAAwDAQACEQMRAD8ATKiiioois0KLJmyURojDj7yzhLbaSpRPsKl9DaUvGsdQMWayxlOvuq+ZWPlbT3UT2FO7wg4Sad0BAbWmO3Mu5SPGmODJB8kjtSPGsep8KZ16uOw+vgIykopKk6aDylv0D8N+u9RvNG5JZsLDmCFSt1EH+UV2nT/wc2BllP7c1NLkunr+HbCE/TO9dvUhaAlZBTzDKSe4z1H2q02WX+KiDmUOdGyh69vvWMi4trKqQt0b4A/1H1GHshaHN18pWLj8JunnG5r0C+zW22JCmU8yQdgE/Nn3JB9q5prT4ZtV2llT9imM3hKdy2E8i/z609enkBy0L5khSXpMlWT3BeWQfqMflUHcY6oklTSgcA5ST3B6V5quJMRpJA8ODm9wR9lSlpIJwWuGvay8xr5Z7nZJ64N1hPRJCDhSHE4/9rQr0X4g6B03ri2mJe4CHFAfu30jlcbPQYI7UlfGfhZeeHV2w8lUm1vK/h5SRt/tV5GtXgfE9Pinwz0yePPy+iErMPfT9Q1aueUUUVpkvRWWKw7KktRmEKcddUEISBkknpWKuy/CTpNvUPElNxlNhyLakeMQRkFZyE0JXVbaOnfO7ZourYYjLIGDumS4AcOoegtIMeKyg3eWgOSncbjI2QPQA/8AcV0+IwZMpDKeqiAT5DuftWLpUNxG1XI4f8PZ2q4sBMySlaI7CFkhCSs451Y3wD2HU4GRmviTDPi9dmeblxWrlLKWDp0sFf7xAS9ACW0jnaGUY74G4+1Uy/aqj6LsU3UMxtbrEVslTSNlOEkBIGehJIGe2TVT+HrjXI1oLtC1e5bIMuE0JDbyMstrazhWeYkAgkd9wrpsaqPGHWdq1vqy2aQ0hJFytokCTc5DKCW08h+UAkAFIOCSNicAE4p/LgkkdU1zhYN1J9BK4aoOjMZ1vsmE4fy1z9DWKa4z4C5FvYdLZPMUEoBIJwMkZ3265rZv0T8RH8RAy42CRjqR3H61AaUlG1S0211WIclWWSejTp3KPQKOSOwOR1IBuJG+9UzcupYbbOv+y8AOgf7Co+BnNQutdNWzVum5djurKXWH0YBI3QrsoeRq0XuJ+FlkpH7teSPQ9xWj61lzzKWUFpsQdCPSftLZo/RXm/xE0rP0Zq2dYJ6FBcdZ8NZGziD/AJVD6VXqbr40NHNTdMRdWR2wJMBXhPqHVTajtnzwaUWvuGB4kMSomT99j8x93WRrKfkSlnbt8kU3XwQ2ltjRt3vBR+9lSg0FfypH96UWnV+DU54UFPLjlmL+uaW8ZPc3C3BvchEYUAakX9rtzKFOOpaQMqUQAPU1Z51nttwsy7RcobMyG6jkcZdSFJWPMg987g9QdxUbpuL4j6pKhsjZOfM9T9B/WrFXzrCojE3mbE7JhiEoe/INgkL+IvRUDQ3El+1WmO6za347ciMlayvAIIUATkkAg9STvVz4A6o0jC0ZMs852FarmZCC/JfUE+O0Vgg5P+kZBA7bgbmu5ceNCWbXtsjw5eY9xjAqjTEAFTYPVJHdJO5HbGQQaTvX+hr/AKJuCY15jjwnSQxJaPM06B1weoOMEg4I/Ot7BVUuMQClkfZ439pcI5ac80C4KbzSOtbZxAtlzasFidYjsPGOLhPcDTJSBkOoI+YnIyAACDgkirbbL+/FH4efKi3llgBLk+3ELWkgYJdZBJHTJKcgdSAMkeey5ktxhMdcuQpoDAaLpKQPIAnA+grLbJ1zsstubbZcu3SBuh1lZbUR6EYyPTpVzuH4WgtY4AdgqDO5xu669Epdzst1kJtMW5xH5y4xltNNuBSi0CE8+3YkgfWoNSSlZQoEEE5Hka4B8OnE7Rem3rtdda3Se5qK4EJVNdZLifCSMhGRkgk5J23OMmuoaJ4gr4hXy4z7NYpMXTsZCWxNkbKdkE5IAGQABudyQcZxnFY3HsDkivI0aNGt+6bYdVgHITuvvjBbRduGl+g8oUVxFED1G9edRBBIPUV6Ta6eTH0dd3lbJREWT9q823iC6sjoVE0/4Be408rewI/pU40BnafSu/C2wW28KkLnILimsYT2xXddMahu2mrY3bbLJTEit7htLSME+fSuL8EnUiZOaJ3UkY/X9K6nW5ngjmZllbce0oa9zCC1X63cXdbQWg2mXEcQCcBcVO577gA1LR+Omq28B232l4dyW1pJ+ysflWla9Nt3DQ8yyKiGPfoDglhKsczgWARj0IGMdiBWlwchxZt9uESbEZeBhKIS62F8pCkjIBBwdzWaMuHmKRwjHQbW9eUZypS5tz+rupd3jHPfkKek2WOpSjuEPlIA8hkGo+/67sWpG2ot/wBMmVCSlYLJdCgVkpwoEgEEAEZGDvVY0YzHe1lbY8ppDrC5IQtC05CgcjBFdOesun59+kWBejnoyMEJuDYKUAgZBB277DrvS+upsMo52nlG5F7gomB9RIy2YWvayrGmb3wwsuDB0gYzndxbKHle+SSR9MVY7nrPh7fIoi3iGJLIGAiTC5gn2O5H0xVWfsVrZ0naZBjtuPm8mI+8CcuoClDB3xggDpUzqS26PtlxkwDpC8OqaGA9HQpTZJAIIOdwM4PsaFngoZJAQX5r+Vax8zWkG1reFsWPTvw9ovMW9JDMaQ0STFdU6qOSQRkoIIIGcgZx08q6dYLxw4t9hbsliutlgwEA+Gyh0ISkkkk74JJJzk70vh00ifpFq9WdwvSIwULhGG60AKPKsDqRjGR6ZHQ1M27SVjfn2Vt8SUsS7OZr5S5vzgAkjI2GCdqOq4qV8eWSRxtpZBsZJmuBZWTjxeozHC2/fsyVGnPFrw0pjvJcJBOMjH3pAlJUlRSpJSR2Ipxb3p/Ts2wSbppmXIkNxCPxUeUj5ggnAUNhkA9evfypbOL0KPC1K0I7YQl2MlZA8+ZQ/QU14booKSncyInU3N915r5XyuBd/Cz8GFoTqN9C1Y5mCUjzOf8AmmG4aWUXrVcdDoBjRj472ehAIwD7nA9s0qWmru9ZLq3OZTzFOxTnGRV5RxVeSDi2gE90uEfrTqqhdNC6NrrE90LE4NcHHsmmOsrExry4XSc9I/h0iJFDKMpUkE85ODuCeg7Yz5VIWq3w7dxHbvMB9k2+6xFrBCgAlZAUR12zjI+vlShucUpZPyW9tPuomsTfFC6eInxIqOQHcIVg4+1Z+ThxoHw32uLH2jG12vUL2OiZ4aMesV5i3ld2t7rTU1s+G2s82CsAddtgcn2NfPEXV9/ialuFug3QohDAQGgkkApGQCBnqT3zVF4c3vhtqaC2LhquRa7iR80d5IAz6Kxg10+Jw50pJQFsahckJIzlt1s0rkqKaknDq67i0W1aiGxySMPJ0ub6FQUKSweF0BCn2w8zekuFBWOfGeuM5xv1q83969SLg45atXWWLDWAA06UqUDjfJz3OajTw00m0Mu3R8e76B+lVfVTfB/S7SlXbUDqlp6NtSAtRPoEg/1oA1NHUzAw5ibk2y33V4jlY2z7bb3shm8Gx6Xslzt7rBuDUl9l9IIJdaKicLAOSCckEjbO1T7F/s111NZpUZ5mEwbZIYWhZCQwsjZJ7Y8sdR0pWeIPEWFLuCm9KRHY0ROyXX1krUPbtVSVrG/nrNP2rT/kjJm5zcON9/fpAfi8hy7hNpIjWvSenLqw3eotzn3JsMIbj7pQjOSScnfGceuPWlj4zuIc1QwEkHkipScefMr+9Q/+MdQ42nrHtUNNlyJshT8lwuOK6k02oqQ0zTmdmJ3KFmlDzoLLBRRRRqoRRRRUURWyxPnMYDMyQ2B05XCKKK4QDuosr13urww7cZah6vK/vWkpSlqKlKKiepJyaKKgaBsF0kndflFFFdXEUUUVFF//2Q==';
+
+  const itens = (() => { try { return JSON.parse(orc.itens||'[]'); } catch { return []; }})();
+  const isContrato = tipo === 'contrato';
+  const titulo = isContrato ? 'CONTRATO DE PRESTAÇÃO DE SERVIÇOS' : 'PROPOSTA COMERCIAL';
+  const numDoc = '#' + String(orc.numero||'').padStart(4,'0');
+  const hoje = new Date().toLocaleDateString('pt-BR');
+
+  const itensHTML = itens.map((item,i)=>`
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:8px 10px;font-size:13px">${String(i+1).padStart(2,'0')}</td>
+      <td style="padding:8px 10px;font-size:13px">${item.curso}</td>
+      <td style="padding:8px 10px;font-size:13px;text-align:center">${item.qtd}</td>
+      <td style="padding:8px 10px;font-size:13px;text-align:right">R$ ${Number(item.valor_unit||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td style="padding:8px 10px;font-size:13px;text-align:right;font-weight:600">R$ ${Number(item.subtotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+    </tr>`).join('');
+
+  const clausulas = isContrato ? `
+    <div style="margin-top:24px">
+      <h3 style="font-size:14px;color:#1a1a1a;border-bottom:2px solid #f5a623;padding-bottom:6px;margin-bottom:14px">CLÁUSULAS CONTRATUAIS</h3>
+      <p style="font-size:12px;color:#444;margin-bottom:10px;line-height:1.7"><strong>1. OBJETO:</strong> Prestação de serviços de treinamento em trabalho em altura pela <strong>ALPIEND TREINAMENTOS</strong>, conforme itens acima.</p>
+      <p style="font-size:12px;color:#444;margin-bottom:10px;line-height:1.7"><strong>2. OBRIGAÇÕES DA ALPIEND:</strong> Fornecer instrutores qualificados, materiais didáticos, equipamentos e certificado de conclusão ao final do treinamento.</p>
+      <p style="font-size:12px;color:#444;margin-bottom:10px;line-height:1.7"><strong>3. OBRIGAÇÕES DO CONTRATANTE:</strong> Efetuar o pagamento nas condições acordadas e disponibilizar os participantes nas datas combinadas com documentação completa (RG, CPF, ASO).</p>
+      <p style="font-size:12px;color:#444;margin-bottom:10px;line-height:1.7"><strong>4. PAGAMENTO:</strong> ${orc.forma_pagamento||'A combinar'}. Atraso implica multa de 2% + juros de 1% ao mês.</p>
+      <p style="font-size:12px;color:#444;margin-bottom:10px;line-height:1.7"><strong>5. CANCELAMENTO:</strong> Cancelamentos com menos de 48h poderão ser cobrados integralmente. Reagendamentos sujeitos à disponibilidade.</p>
+      <p style="font-size:12px;color:#444;margin-bottom:10px;line-height:1.7"><strong>6. FORO:</strong> Comarca de São Paulo/SP.</p>
+    </div>
+    <div style="margin-top:50px;display:grid;grid-template-columns:1fr 1fr;gap:60px">
+      <div style="text-align:center"><div style="border-top:1px solid #333;padding-top:8px;font-size:12px;color:#444"><strong>ALPIEND TREINAMENTOS</strong><br>Contratada</div></div>
+      <div style="text-align:center"><div style="border-top:1px solid #333;padding-top:8px;font-size:12px;color:#444"><strong>${orc.cliente||'CONTRATANTE'}</strong><br>Contratante</div></div>
+    </div>` : '';
+
+  const docHTML = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>${titulo} ${numDoc}</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap');
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Sora',sans-serif;background:#fff;color:#1a1a1a;padding:40px;max-width:800px;margin:0 auto}
+      @media print{body{padding:20px} .no-print{display:none!important}}
+    </style></head><body>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #f5a623">
+      <div>
+        <img src="${LOGO}" style="height:52px;margin-bottom:6px" alt="Alpiend">
+        <div style="font-size:11px;color:#888">contato@alpiend.com.br</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:22px;font-weight:800">${titulo}</div>
+        <div style="font-size:15px;color:#f5a623;font-weight:700">${numDoc}</div>
+        <div style="font-size:11px;color:#888;margin-top:4px">Emitido: ${hoje} · Validade: ${orc.validade?new Date(orc.validade+'T00:00:00').toLocaleDateString('pt-BR'):'—'}</div>
+      </div>
+    </div>
+
+    <div style="background:#f8f8f8;border-radius:10px;padding:16px;margin-bottom:20px">
+      <div style="font-size:10px;font-weight:700;color:#999;margin-bottom:8px;text-transform:uppercase">${isContrato?'CONTRATANTE':'CLIENTE'}</div>
+      <div style="font-size:16px;font-weight:700">${orc.cliente||'—'}</div>
+      ${orc.doc?`<div style="font-size:12px;color:#666;margin-top:3px">CNPJ/CPF: ${orc.doc}</div>`:''}
+      ${orc.email?`<div style="font-size:12px;color:#666">E-mail: ${orc.email}</div>`:''}
+      ${orc.endereco?`<div style="font-size:12px;color:#666">Endereço: ${orc.endereco}</div>`:''}
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+      <thead><tr style="background:#1a1a1a;color:#fff">
+        <th style="padding:10px;font-size:12px;text-align:left;width:36px">#</th>
+        <th style="padding:10px;font-size:12px;text-align:left">Curso / Serviço</th>
+        <th style="padding:10px;font-size:12px;text-align:center;width:80px">Qtd Alunos</th>
+        <th style="padding:10px;font-size:12px;text-align:right;width:120px">Valor Unit.</th>
+        <th style="padding:10px;font-size:12px;text-align:right;width:130px">Subtotal</th>
+      </tr></thead>
+      <tbody>${itensHTML}</tbody>
+    </table>
+
+    <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+      <div style="background:#f8f8f8;border-radius:10px;padding:16px;min-width:260px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:#666">Subtotal</span><span>R$ ${Number(orc.subtotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></div>
+        ${orc.desconto?`<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:#e74c3c">Desconto (${orc.desconto}%)</span><span style="color:#e74c3c">- R$ ${Number((orc.subtotal||0)*((orc.desconto||0)/100)).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:800;border-top:2px solid #f5a623;padding-top:8px;margin-top:4px">
+          <span>TOTAL</span><span style="color:#27ae60">R$ ${Number(orc.total||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+        </div>
+        <div style="font-size:11px;color:#888;margin-top:6px">Pagamento: ${orc.forma_pagamento||'—'}</div>
+      </div>
+    </div>
+
+    ${orc.observacoes?`<div style="background:#fffbf0;border:1px solid #f5a623;border-radius:8px;padding:14px;margin-bottom:20px"><div style="font-size:11px;font-weight:700;color:#f5a623;margin-bottom:6px">OBSERVAÇÕES / CONDIÇÕES</div><div style="font-size:12px;color:#444;line-height:1.7">${orc.observacoes}</div></div>`:''}
+
+    ${clausulas}
+
+    <div style="text-align:center;margin-top:30px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#aaa">
+      Alpiend Treinamentos · Documento gerado em ${hoje}
+    </div>
+    <div class="no-print" style="text-align:center;margin-top:20px">
+      <button onclick="window.print()" style="background:#f5a623;color:#000;border:none;padding:12px 32px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">🖨️ Imprimir / Salvar como PDF</button>
+    </div>
+  </body></html>`;
+
+  const win = window.open('','_blank','width=880,height=960');
+  win.document.write(docHTML);
+  win.document.close();
 }
 
 // ── INIT ──
