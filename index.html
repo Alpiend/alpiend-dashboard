@@ -525,11 +525,11 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
           </div>
           <div id="pj-fields" style="display:none">
             <div class="form-grid" style="margin-top:0">
-              <div class="form-group"><label class="form-label">Empresa / Razão Social</label><input class="form-input" id="a-empresa" placeholder="Nome da empresa"></div>
-              <div class="form-group"><label class="form-label">CNPJ / Dados de Faturamento (NF)</label><input class="form-input" id="a-nf" placeholder="CNPJ, Razão Social, IE..."></div>
+              <div class="form-group full"><label class="form-label">Razão Social *</label><input class="form-input" id="a-empresa" placeholder="Razão Social da empresa"></div>
+              <div class="form-group"><label class="form-label">CNPJ</label><input class="form-input" id="a-nf" placeholder="00.000.000/0001-00"></div>
             </div>
           </div>
-          <div class="form-group"><label class="form-label">Cargo / Função</label><input class="form-input" id="a-cargo" placeholder="Ex: Técnico de Segurança"></div>
+          <div id="pf-cargo-field" class="form-group"><label class="form-label">Cargo / Função</label><input class="form-input" id="a-cargo" placeholder="Ex: Técnico de Segurança"></div>
           <div class="form-group full"><label class="form-label">Rua / Logradouro</label><input class="form-input" id="a-end" placeholder="Rua, Av, número e complemento"></div>
         <div class="form-group"><label class="form-label">Bairro</label><input class="form-input" id="a-bairro" placeholder="Bairro"></div>
         <div class="form-group"><label class="form-label">Cidade</label><input class="form-input" id="a-cidade" placeholder="Cidade"></div>
@@ -996,6 +996,7 @@ function abrirCadastroAluno(){
   ['a-nome','a-cpf','a-rg','a-nasc','a-email','a-tel','a-wpp','a-empresa','a-nf','a-cargo','a-end','a-bairro','a-cidade','a-cep','a-estado','a-pais','a-obs'].forEach(id=>{const el=$(id);if(el)el.value='';});
   if($('a-pf'))$('a-pf').checked=true;
   if($('pj-fields'))$('pj-fields').style.display='none';
+  if($('pf-cargo-field'))$('pf-cargo-field').style.display='block';
   if($('a-pais'))$('a-pais').value='Brasil';
   $('alunoModalTitle').textContent='👤 Cadastrar Aluno';
   $('alunoSaveBtn').textContent='✅ Salvar Aluno';
@@ -1018,8 +1019,8 @@ async function editarAluno(id){
   if($('a-nf')) $('a-nf').value=data.notas_fiscais||'';
   // PF/PJ
   const tp=data.tipo_pessoa||'PF';
-  if(tp==='PJ'&&$('a-pj')){$('a-pj').checked=true;if($('pj-fields'))$('pj-fields').style.display='block';}
-  else{if($('a-pf'))$('a-pf').checked=true;if($('pj-fields'))$('pj-fields').style.display='none';}
+  if(tp==='PJ'&&$('a-pj')){$('a-pj').checked=true;if($('pj-fields'))$('pj-fields').style.display='block';if($('pf-cargo-field'))$('pf-cargo-field').style.display='none';}
+  else{if($('a-pf'))$('a-pf').checked=true;if($('pj-fields'))$('pj-fields').style.display='none';if($('pf-cargo-field'))$('pf-cargo-field').style.display='block';}
   // endereço — tentar parsear o campo composto (compatibilidade retroativa)
   if($('a-end'))$('a-end').value=data.endereco||'';
   $('a-end').value=data.endereco||'';
@@ -1280,7 +1281,10 @@ async function loadMatriculas(){
       <td><span class="badge badge-gray">${m.forma_pagamento||'—'}</span></td>
       <td><span class="badge ${docs===3?'badge-green':docs>0?'badge-orange':'badge-red'}">${docs}/3</span></td>
       <td><span class="badge ${m.status==='Confirmado'?'badge-green':m.status?.includes('Aguard')?'badge-orange':'badge-red'}">${m.status||'—'}</span></td>
-      <td><button class="btn btn-primary btn-sm" onclick="editarValorPagamento('${m.id}')">✏️ Editar</button></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-primary btn-sm" onclick="editarMatricula('${m.id}')" title="Editar inscrição completa">✏️ Editar</button>
+        <button class="btn btn-ghost btn-sm" onclick="editarValorPagamento('${m.id}')" title="Editar só o pagamento" style="margin-left:4px">💰</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -1319,6 +1323,8 @@ let editingCertId=null;
 async function abrirCadastroCert(){
   editingCertId=null;
   ['c-num','c-emissao','c-aprovacao','c-nota','c-venc'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  if($('c-aluno'))$('c-aluno').value='';
+  if($('c-curso'))$('c-curso').value='irata1';
   if($('c-status'))$('c-status').value='Ativa';
   $('certModalTitle').textContent='🏆 Nova Certificação';
   $('certSaveBtn').textContent='✅ Emitir Certificação';
@@ -1329,6 +1335,8 @@ async function editarCert(id){
   const {data}=await sb.from('certificacoes').select('*').eq('id',id).single();
   if(!data)return;
   editingCertId=id;
+  // carregar alunos ANTES de setar o select
+  await loadAlunos();
   if($('c-aluno'))$('c-aluno').value=data.aluno_id||'';
   if($('c-curso'))$('c-curso').value=data.curso_id||'';
   $('c-num').value=data.numero_certificado||'';
@@ -1345,14 +1353,36 @@ async function editarCert(id){
 }
 function fecharCadastroCert(){editingCertId=null;closeModal('certModal');}
 async function salvarCert(){
-  const aluno_id=$('c-aluno')?.value;
+  const aluno_id=$('c-aluno')?.value?.trim();
   if(!aluno_id){showToast('⚠️','Selecione o aluno!','error');return;}
-  const nota=parseFloat($('c-nota')?.value);
-  const payload={aluno_id,curso_id:$('c-curso')?.value||null,numero_certificado:$('c-num').value||null,data_emissao:$('c-emissao').value||null,data_aprovacao:$('c-aprovacao').value||null,nota_aprovacao:isNaN(nota)?null:nota,data_vencimento:$('c-venc').value||null,status:$('c-status')?.value||'Ativa'};
-  let error;
-  if(editingCertId){({error}=await sb.from('certificacoes').update(payload).eq('id',editingCertId));}
-  else{({error}=await sb.from('certificacoes').insert([payload]));}
-  if(error){showToast('❌','Erro: '+error.message,'error');return;}
+  const dataVenc=$('c-venc')?.value?.trim();
+  if(!dataVenc){showToast('⚠️','Preencha a data de vencimento!','error');return;}
+  const notaRaw=$('c-nota')?.value?.trim();
+  const nota=notaRaw?parseFloat(notaRaw):null;
+  const aprovacaoRaw=$('c-aprovacao')?.value?.trim();
+  const emissaoRaw=$('c-emissao')?.value?.trim();
+  const payload={
+    aluno_id,
+    curso_id:$('c-curso')?.value||null,
+    numero_certificado:$('c-num')?.value?.trim()||null,
+    data_emissao:emissaoRaw||null,
+    data_aprovacao:aprovacaoRaw||null,
+    nota_aprovacao:(nota!==null&&!isNaN(nota))?nota:null,
+    data_vencimento:dataVenc,
+    status:$('c-status')?.value||'Ativa'
+  };
+  console.log('salvarCert payload:', JSON.stringify(payload));
+  let result;
+  if(editingCertId){
+    result=await sb.from('certificacoes').update(payload).eq('id',editingCertId);
+  } else {
+    result=await sb.from('certificacoes').insert([payload]);
+  }
+  if(result.error){
+    console.error('Erro certificação:', result.error);
+    showToast('❌','Erro: '+result.error.message,'error');
+    return;
+  }
   fecharCadastroCert();
   showToast('✅',editingCertId?'Certificação atualizada!':'Certificação emitida!');
   loadCerts();
@@ -1961,6 +1991,7 @@ function exportarCSV(){
 function togglePJFields(){
   const isPJ=document.querySelector('input[name="a-tipo-pessoa"]:checked')?.value==='PJ';
   if($('pj-fields'))$('pj-fields').style.display=isPJ?'block':'none';
+  if($('pf-cargo-field'))$('pf-cargo-field').style.display=isPJ?'none':'block';
 }
 
 // ── INIT ──
