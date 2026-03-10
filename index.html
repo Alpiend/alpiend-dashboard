@@ -678,6 +678,24 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
         <div class="form-group"><label class="form-label">Forma de Pagamento</label><select class="form-select" id="m-pagto"><option>PIX</option><option>Boleto</option><option>Cartão de Crédito</option><option>Faturamento</option><option>Isento</option></select></div>
         <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="m-status"><option>Confirmado</option><option>Aguardando Pagamento</option><option>Documentação Pendente</option><option>Cancelado</option></select></div>
       </div>
+
+      <!-- NOTA FISCAL -->
+      <div style="background:rgba(41,128,185,.07);border:1px solid rgba(41,128,185,.2);border-radius:8px;padding:10px;margin-top:6px">
+        <div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:8px">🧾 NOTA FISCAL</div>
+        <div class="form-grid">
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Número da NF</label><input class="form-input" id="m-num-nf" placeholder="Ex: 000123"></div>
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Data de Emissão NF</label><input class="form-input" type="date" id="m-data-nf"></div>
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Status NF</label>
+            <select class="form-select" id="m-status-nf">
+              <option value="">— Selecione —</option>
+              <option>Emitida</option>
+              <option>Pendente</option>
+              <option>Cancelada</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Observação NF</label><input class="form-input" id="m-obs-nf" placeholder="Ex: NF referente ao treinamento IRATA"></div>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fecharCadastroMatricula()">Cancelar</button>
@@ -1155,6 +1173,10 @@ async function editarMatricula(id){
   if($('m-valor-cert'))$('m-valor-cert').value=data.valor_certificacao!=null?data.valor_certificacao:'';
   if($('m-pagto'))$('m-pagto').value=data.forma_pagamento||'PIX';
   if($('m-status'))$('m-status').value=data.status||'Confirmado';
+  if($('m-num-nf'))$('m-num-nf').value=data.numero_nf||'';
+  if($('m-data-nf'))$('m-data-nf').value=data.data_nf||'';
+  if($('m-status-nf'))$('m-status-nf').value=data.status_nf||'';
+  if($('m-obs-nf'))$('m-obs-nf').value=data.observacao_nf||'';
   if($('m-datainicio'))$('m-datainicio').value=data.data_matricula||'';
   if($('m-curso'))$('m-curso').value=data.turmas?.curso||'';
   $('matriculaModalTitle').textContent='✏️ Editar Inscrição';
@@ -1168,6 +1190,8 @@ async function editarMatricula(id){
 function fecharCadastroMatricula(){
   editingMatriculaId=null;
   editingAlunoIdFromMatricula=null;
+  ['m-num-nf','m-data-nf','m-obs-nf'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  if($('m-status-nf'))$('m-status-nf').value='';
   // esconder caixa nova turma ao fechar
   const ntb=$('nova-turma-box');
   if(ntb) ntb.style.display='none';
@@ -1249,7 +1273,7 @@ async function salvarMatricula(){
   const valor=parseFloat(String(valorStr).replace(',','.'));
   const valorCertStr=$('m-valor-cert')?.value||'';
   const valorCert=valorCertStr?parseFloat(String(valorCertStr).replace(',','.')):null;
-  const payload={aluno_id,turma_id:$('m-turma')?.value||null,data_matricula:$('m-datainicio')?.value||new Date().toISOString().split('T')[0],valor_pago:isNaN(valor)?null:valor,valor_certificacao:isNaN(valorCert)||valorCert===null?null:valorCert,forma_pagamento:$('m-pagto')?.value||null,status:$('m-status')?.value||'Confirmado'};
+  const payload={aluno_id,turma_id:$('m-turma')?.value||null,data_matricula:$('m-datainicio')?.value||new Date().toISOString().split('T')[0],valor_pago:isNaN(valor)?null:valor,valor_certificacao:isNaN(valorCert)||valorCert===null?null:valorCert,forma_pagamento:$('m-pagto')?.value||null,status:$('m-status')?.value||'Confirmado',numero_nf:$('m-num-nf')?.value||null,data_nf:$('m-data-nf')?.value||null,status_nf:$('m-status-nf')?.value||null,observacao_nf:$('m-obs-nf')?.value||null};
   let error;
   if(editingMatriculaId){({error}=await sb.from('matriculas').update(payload).eq('id',editingMatriculaId));}
   else{({error}=await sb.from('matriculas').insert([payload]));}
@@ -1752,73 +1776,93 @@ async function relContasReceber(ini, fim){
 // ══ RELATÓRIO 2: NOTAS FISCAIS POR EMPRESA ══
 async function relNotasFiscais(ini, fim){
   $('rel-titulo').textContent = '🧾 Notas Fiscais por Empresa';
+
+  // buscar todas as matrículas com dados da empresa e NF
   let q = sb.from('matriculas')
-    .select('*, alunos(nome, empresa, notas_fiscais, whatsapp)')
-    .not('alunos.empresa', 'is', null)
-    .order('data_matricula', {ascending: false});
-  q = aplicarFiltroDatas(q, 'data_matricula', ini, fim);
+    .select('*, turmas(nome, curso), alunos(nome, empresa, notas_fiscais)')
+    .order('data_nf', {ascending: false, nullsFirst: false});
+  q = aplicarFiltroDatas(q, 'data_nf', ini, fim);
   const {data, error} = await q;
   if(error){ $('rel-table-wrap').innerHTML='<div class="loading">❌ Erro: '+error.message+'</div>'; return; }
 
-  // Agrupar por empresa
-  const grupos = {};
-  (data||[]).forEach(m=>{
-    const emp = m.alunos?.empresa || 'Sem Empresa';
-    const nf  = m.alunos?.notas_fiscais || '—';
-    if(!grupos[emp]) grupos[emp] = {empresa:emp, nf, alunos:[], total:0, totalCert:0};
-    grupos[emp].alunos.push(m.alunos?.nome||'—');
-    grupos[emp].total += m.valor_pago||0;
-    grupos[emp].totalCert += m.valor_certificacao||0;
-  });
-  const lista = Object.values(grupos).sort((a,b)=>b.total-a.total);
-  const totalGeral = lista.reduce((s,g)=>s+g.total,0);
-  const totalCertGeral = lista.reduce((s,g)=>s+g.totalCert,0);
+  const comNF   = (data||[]).filter(m=>m.numero_nf);
+  const semNF   = (data||[]).filter(m=>!m.numero_nf && m.alunos?.empresa);
+  const totalNF = comNF.reduce((s,m)=>s+(m.valor_pago||0)+(m.valor_certificacao||0),0);
+
+  // empresas únicas com NF
+  const empresas = [...new Set((data||[]).map(m=>m.alunos?.empresa).filter(Boolean))];
 
   renderRelStats([
-    {icon:'🏢', val: lista.length, label:'Empresas', bg:'rgba(52,152,219,.1)', color:'var(--blue)'},
-    {icon:'👥', val: data?.length||0, label:'Matrículas', bg:'rgba(245,166,35,.1)', color:'var(--accent)'},
-    {icon:'💰', val: fmt(totalGeral), label:'Total Treinamentos', bg:'rgba(46,204,113,.1)', color:'var(--green)'},
-    {icon:'🏆', val: fmt(totalCertGeral), label:'Total Certificações', bg:'rgba(155,89,182,.1)', color:'#9b59b6'},
+    {icon:'🧾', val: comNF.length,   label:'NFs Emitidas',    bg:'rgba(46,204,113,.1)',  color:'var(--green)'},
+    {icon:'⏳', val: semNF.length,   label:'NFs Pendentes',   bg:'rgba(243,156,18,.1)',  color:'var(--orange)'},
+    {icon:'🏢', val: empresas.length, label:'Empresas',        bg:'rgba(52,152,219,.1)', color:'var(--blue)'},
+    {icon:'💰', val: fmt(totalNF),   label:'Total com NF',    bg:'rgba(245,166,35,.1)', color:'var(--accent)'},
   ]);
 
-  $('rel-total-badge').textContent = lista.length+' empresas';
-  relCols = ['Empresa','CNPJ / Dados NF','Qtd Alunos','Alunos','Total Treinamento','Total Certificação','Total Geral'];
-  relData = lista.map(g=>({
-    'Empresa': g.empresa,
-    'CNPJ / Dados NF': g.nf,
-    'Qtd Alunos': g.alunos.length,
-    'Alunos': g.alunos.join(', '),
-    'Total Treinamento': g.total,
-    'Total Certificação': g.totalCert,
-    'Total Geral': g.total+g.totalCert,
+  $('rel-total-badge').textContent = (data||[]).length+' registros';
+  relCols = ['Empresa','CNPJ','Aluno','Curso/Turma','Nº NF','Data NF','Status NF','Valor Treinamento','Valor Cert.','Total','Observação NF'];
+  relData = (data||[]).map(m=>({
+    'Empresa':            m.alunos?.empresa||'Pessoa Física',
+    'CNPJ':               m.alunos?.notas_fiscais||'—',
+    'Aluno':              m.alunos?.nome||'—',
+    'Curso/Turma':        m.turmas?.curso||m.turmas?.nome||'—',
+    'Nº NF':              m.numero_nf||'—',
+    'Data NF':            m.data_nf?fmtDate(m.data_nf):'—',
+    'Status NF':          m.status_nf||'—',
+    'Valor Treinamento':  m.valor_pago||0,
+    'Valor Cert.':        m.valor_certificacao||0,
+    'Total':              (m.valor_pago||0)+(m.valor_certificacao||0),
+    'Observação NF':      m.observacao_nf||'—',
   }));
 
-  if(!lista.length){
-    $('rel-table-wrap').innerHTML='<div class="empty-state"><div class="icon">🧾</div><p>Nenhuma matrícula com empresa cadastrada</p></div>';
+  if(!(data||[]).length){
+    $('rel-table-wrap').innerHTML='<div class="empty-state"><div class="icon">🧾</div><p>Nenhuma matrícula encontrada no período</p></div>';
     return;
   }
 
-  $('rel-table-wrap').innerHTML = `<table class="table">
-    <thead><tr>
-      <th>Empresa</th><th>CNPJ / Dados NF</th><th>Qtd Alunos</th>
-      <th>Nomes</th><th>Total Treinamento</th><th>Total Cert.</th><th>Total Geral</th>
-    </tr></thead>
-    <tbody>${lista.map(g=>`<tr>
-      <td><strong>${g.empresa}</strong></td>
-      <td style="font-size:11px;color:var(--text2)">${g.nf}</td>
-      <td style="text-align:center"><span class="badge badge-blue">${g.alunos.length}</span></td>
-      <td style="font-size:11px;color:var(--text2);max-width:180px">${g.alunos.join(', ')}</td>
-      <td style="font-weight:700;color:var(--green)">${fmt(g.total)}</td>
-      <td style="font-size:12px;color:var(--blue)">${g.totalCert?fmt(g.totalCert):'—'}</td>
-      <td style="font-weight:700;color:var(--accent)">${fmt(g.total+g.totalCert)}</td>
-    </tr>`).join('')}</tbody>
-    <tfoot><tr style="background:rgba(245,166,35,.06)">
-      <td colspan="4" style="font-weight:700;font-size:12px">TOTAL GERAL</td>
-      <td style="font-weight:700;color:var(--green)">${fmt(totalGeral)}</td>
-      <td style="font-weight:700;color:var(--blue)">${fmt(totalCertGeral)}</td>
-      <td style="font-weight:700;color:var(--accent)">${fmt(totalGeral+totalCertGeral)}</td>
-    </tr></tfoot>
-  </table>`;
+  // Agrupar por empresa para exibição em blocos
+  const grupos = {};
+  (data||[]).forEach(m=>{
+    const emp = m.alunos?.empresa || '👤 Pessoa Física';
+    if(!grupos[emp]) grupos[emp] = {cnpj: m.alunos?.notas_fiscais||'—', itens:[], total:0};
+    grupos[emp].itens.push(m);
+    grupos[emp].total += (m.valor_pago||0)+(m.valor_certificacao||0);
+  });
+  const listaEmpresas = Object.entries(grupos).sort((a,b)=>b[1].total-a[1].total);
+
+  $('rel-table-wrap').innerHTML = listaEmpresas.map(([emp, g])=>`
+    <div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(41,128,185,.08);border:1px solid rgba(41,128,185,.2);border-radius:8px 8px 0 0">
+        <div>
+          <span style="font-weight:700;font-size:13px;color:var(--text)">🏢 ${emp}</span>
+          <span style="font-size:11px;color:var(--text3);margin-left:10px">CNPJ: ${g.cnpj}</span>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <span style="font-size:11px;color:var(--text2)">${g.itens.length} NF(s)</span>
+          <span style="font-weight:700;color:var(--accent)">${fmt(g.total)}</span>
+        </div>
+      </div>
+      <table class="table" style="border-radius:0 0 8px 8px;overflow:hidden">
+        <thead><tr>
+          <th>Aluno</th><th>Curso / Turma</th><th>Nº NF</th><th>Data NF</th>
+          <th>Status NF</th><th>Valor Trein.</th><th>Valor Cert.</th><th>Total</th><th>Observação</th>
+        </tr></thead>
+        <tbody>${g.itens.map(m=>{
+          const statusColor = m.status_nf==='Emitida'?'badge-green':m.status_nf==='Cancelada'?'badge-red':m.status_nf?'badge-orange':'badge-gray';
+          return `<tr>
+            <td><strong>${m.alunos?.nome||'—'}</strong></td>
+            <td style="font-size:11px">${m.turmas?.curso||m.turmas?.nome||'—'}</td>
+            <td style="font-weight:700;color:var(--blue);font-family:'Barlow Condensed',monospace">${m.numero_nf||'<span style="color:var(--text3)">Não informado</span>'}</td>
+            <td style="font-size:11px">${m.data_nf?fmtDate(m.data_nf):'—'}</td>
+            <td><span class="badge ${statusColor}">${m.status_nf||'—'}</span></td>
+            <td style="color:var(--green);font-weight:700">${fmt(m.valor_pago)}</td>
+            <td style="color:var(--blue)">${m.valor_certificacao?fmt(m.valor_certificacao):'—'}</td>
+            <td style="font-weight:700;color:var(--accent)">${fmt((m.valor_pago||0)+(m.valor_certificacao||0))}</td>
+            <td style="font-size:11px;color:var(--text3)">${m.observacao_nf||'—'}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`).join('');
 }
 
 // ══ RELATÓRIO 3: RECEITA POR CURSO ══
