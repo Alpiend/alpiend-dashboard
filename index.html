@@ -294,7 +294,6 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
     <div class="nav-label">Estratégico</div>
     <div class="nav-item" onclick="setTab('kpis')">📈 KPIs & Aprovação</div>
     <div class="nav-item" onclick="setTab('relatorios')">📋 Relatórios</div>
-    <div class="nav-item" onclick="setTab('orcamentos')">📝 Orçamentos & Contratos</div>
   </div>
   <div class="sidebar-footer">
     <div class="user-card">
@@ -330,7 +329,6 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
       <div class="tab" onclick="setTab('crm')">🎯 CRM</div>
       <div class="tab" onclick="setTab('kpis')">📈 KPIs</div>
     <div class="tab" onclick="setTab('relatorios')">📋 Relatórios</div>
-    <div class="tab" onclick="setTab('orcamentos')">📝 Orçamentos</div>
     </div>
 
     <!-- ══ OVERVIEW ══ -->
@@ -810,7 +808,17 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
         <div class="form-group"><label class="form-label">Nº do Certificado</label><input class="form-input" id="c-num" placeholder="Ex: ALP-2025-001"></div>
         <div class="form-group"><label class="form-label">Data de Emissão *</label><input class="form-input" type="date" id="c-emissao"></div>
         <div class="form-group"><label class="form-label">Data de Aprovação *</label><input class="form-input" type="date" id="c-aprovacao"></div>
-        <div class="form-group"><label class="form-label">Nota de Aprovação (0–10)</label><input class="form-input" type="number" id="c-nota" min="0" max="10" step="0.1" placeholder="Ex: 8.5"></div>
+        <div class="form-group">
+          <label class="form-label">Resultado da Avaliação</label>
+          <select class="form-select" id="c-resultado" onchange="preencherNotaAvaliacao()">
+            <option value="">— Selecione —</option>
+            <option value="Satisfatório">✅ Satisfatório</option>
+            <option value="Bom">⭐ Bom</option>
+            <option value="Muito Bom">⭐⭐ Muito Bom</option>
+            <option value="Excelente">🏆 Excelente</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Nota de Aprovação (%)</label><input class="form-input" type="number" id="c-nota" min="0" max="100" step="0.1" placeholder="Preenchido automaticamente"></div>
         <div class="form-group"><label class="form-label">Data de Vencimento *</label><input class="form-input" type="date" id="c-venc"></div>
         <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="c-status"><option>Ativa</option><option>Vencida</option><option>Suspensa</option></select></div>
       </div>
@@ -923,44 +931,6 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
 </div>
 
     <!-- ══ ORÇAMENTOS & CONTRATOS ══ -->
-    <div class="panel" id="panel-orcamentos">
-
-      <!-- CABEÇALHO -->
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-header">
-          <span class="card-title">📝 Orçamentos & Contratos</span>
-          <div class="flex-row" style="gap:8px">
-            <button class="btn btn-primary" onclick="abrirModalOrcamento()">+ Novo Orçamento</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- STATS -->
-      <div class="stats-grid" style="margin-bottom:14px" id="orc-stats">
-        <div class="stat-card"><div class="stat-icon">📝</div><div class="stat-value" id="orc-stat-total">0</div><div class="stat-label">Total</div></div>
-        <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value" id="orc-stat-pend" style="color:var(--orange)">0</div><div class="stat-label">Aguardando</div></div>
-        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="orc-stat-aprov" style="color:var(--green)">0</div><div class="stat-label">Aprovados</div></div>
-        <div class="stat-card"><div class="stat-icon">📄</div><div class="stat-value" id="orc-stat-contrato" style="color:var(--blue)">0</div><div class="stat-label">Contratos Gerados</div></div>
-      </div>
-
-      <!-- TABELA -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Histórico</span>
-          <input class="form-input" id="orc-search" placeholder="🔍 Buscar cliente..." style="width:220px;font-size:12px" oninput="filtrarOrcamentos(this.value)">
-        </div>
-        <div style="overflow-x:auto">
-          <table class="table">
-            <thead><tr>
-              <th>Nº</th><th>Cliente / Empresa</th><th>Cursos</th><th>Alunos</th>
-              <th>Valor Total</th><th>Validade</th><th>Status</th><th>Ações</th>
-            </tr></thead>
-            <tbody id="tb-orcamentos"><tr><td colspan="8"><div class="loading">⏳ Carregando...</div></td></tr></tbody>
-          </table>
-        </div>
-      </div>
-
-    </div><!-- /panel-orcamentos -->
 
 
 <!-- MODAL ORÇAMENTO -->
@@ -1105,7 +1075,7 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 });
 
 // ── TABS ──
-const pageTitles={overview:'Visão Geral — Alpiend',cursos:'Cursos & Turmas',alunos:'Gestão de Alunos',calendar:'Calendário de Turmas',cert:'Controle de Certificações',presenca:'Controle de Presença',financeiro:'Financeiro & Vendas',crm:'CRM — Leads & Prospecção',kpis:'KPIs & Índice de Aprovação',relatorios:'Relatórios — Contas & Notas Fiscais',orcamentos:'Orçamentos & Contratos'};
+const pageTitles={overview:'Visão Geral — Alpiend',cursos:'Cursos & Turmas',alunos:'Gestão de Alunos',calendar:'Calendário de Turmas',cert:'Controle de Certificações',presenca:'Controle de Presença',financeiro:'Financeiro & Vendas',crm:'CRM — Leads & Prospecção',kpis:'KPIs & Índice de Aprovação',relatorios:'Relatórios — Contas & Notas Fiscais'};
 function setTab(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -1122,7 +1092,6 @@ function setTab(id){
   if(id==='financeiro') loadFinanceiro();
   if(id==='kpis') loadKPIs();
   if(id==='relatorios') loadRelatorios();
-  if(id==='orcamentos') loadOrcamentos();
   if(id==='cursos') loadTurmas();
 }
 
@@ -1239,6 +1208,12 @@ function confirmarExcluirAluno(id, nome){
   }
 }
 async function excluirAluno(id, nome){
+  // Remover registros dependentes antes (foreign key)
+  await sb.from('presenca').delete().in('matricula_id',
+    (await sb.from('matriculas').select('id').eq('aluno_id',id)).data?.map(m=>m.id)||[]
+  );
+  await sb.from('matriculas').delete().eq('aluno_id', id);
+  await sb.from('certificacoes').delete().eq('aluno_id', id);
   const {error} = await sb.from('alunos').delete().eq('id', id);
   if(error){ showToast('❌','Erro ao excluir: '+error.message,'error'); return; }
   showToast('🗑️','Aluno '+nome+' excluído com sucesso!');
@@ -1498,13 +1473,19 @@ async function salvarMatricula(){
     if(errAluno){showToast('❌','Erro ao criar aluno: '+errAluno.message,'error');return;}
     aluno_id=novoAluno.id;
     showToast('👤','Aluno '+nomeManual+' criado automaticamente!');
-  } else if(aluno_id && editingAlunoIdFromMatricula && nomeManual){
+  } else if(aluno_id && nomeManual){
     // atualizar dados do aluno existente ao editar matrícula
-    await sb.from('alunos').update({
-      nome:nomeManual, whatsapp:$('m-wpp')?.value||null, cpf:$('m-cpf')?.value||null,
-      rg:$('m-rg')?.value||null, email:$('m-email')?.value||null,
-      empresa:$('m-empresa')?.value||null, cargo:$('m-cargo')?.value||null
-    }).eq('id',aluno_id);
+    const alunoUpdate={
+      nome:nomeManual,
+      whatsapp:$('m-wpp')?.value||null,
+      cpf:$('m-cpf')?.value||null,
+      rg:$('m-rg')?.value||null,
+      email:$('m-email')?.value||null,
+      empresa:$('m-empresa')?.value||null,
+      cargo:$('m-cargo')?.value||null
+    };
+    const {error:errUpd}=await sb.from('alunos').update(alunoUpdate).eq('id',aluno_id);
+    if(errUpd) console.warn('Aviso ao atualizar aluno:', errUpd.message);
   }
   if(!aluno_id){showToast('⚠️','Informe o candidato!','error');return;}
   const valorStr=$('m-valor')?.value||'0';
@@ -1584,7 +1565,7 @@ async function salvarValorPagamento() {
 let editingCertId=null;
 async function abrirCadastroCert(){
   editingCertId=null;
-  ['c-num','c-emissao','c-aprovacao','c-nota','c-venc'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  ['c-num','c-emissao','c-aprovacao','c-nota','c-venc','c-resultado'].forEach(id=>{const el=$(id);if(el)el.value='';});
   if($('c-status'))$('c-status').value='Ativa';
   $('certModalTitle').textContent='🏆 Nova Certificação';
   $('certSaveBtn').textContent='✅ Emitir Certificação';
@@ -1592,6 +1573,7 @@ async function abrirCadastroCert(){
   await loadAlunos();
   if($('c-aluno'))$('c-aluno').value='';
   if($('c-curso'))$('c-curso').value='irata1';
+  if($('c-resultado'))$('c-resultado').value='';
   openModal('certModal');
 }
 async function editarCert(id){
@@ -1610,6 +1592,7 @@ async function editarCert(id){
   $('c-emissao').value=data.data_emissao||'';
   $('c-aprovacao').value=data.data_aprovacao||'';
   $('c-nota').value=data.nota_aprovacao!=null?data.nota_aprovacao:'';
+  if($('c-resultado'))$('c-resultado').value=data.resultado_avaliacao||'';
   $('c-venc').value=data.data_vencimento||'';
   if($('c-status'))$('c-status').value=data.status||'Ativa';
   $('certModalTitle').textContent='✏️ Editar Certificação';
@@ -1619,6 +1602,19 @@ async function editarCert(id){
   openModal('certModal');
 }
 function fecharCadastroCert(){editingCertId=null;closeModal('certModal');}
+function preencherNotaAvaliacao(){
+  const resultado = $('c-resultado')?.value;
+  const notas = {
+    'Satisfatório': 8.6,
+    'Bom':          9.3,
+    'Muito Bom':    10.0,
+    'Excelente':    10.0
+  };
+  if(resultado && notas[resultado] !== undefined){
+    if($('c-nota')) $('c-nota').value = notas[resultado].toFixed(1);
+  }
+}
+
 async function salvarCert(){
   const aluno_id=$('c-aluno')?.value?.trim();
   if(!aluno_id){showToast('⚠️','Selecione o aluno!','error');return;}
@@ -1629,11 +1625,11 @@ async function salvarCert(){
   const aprovacaoRaw=$('c-aprovacao')?.value?.trim();
   const emissaoRaw=$('c-emissao')?.value?.trim();
   const tipoCurso=$('c-curso')?.value||null;
-  console.log('tipo_curso selecionado:', tipoCurso, '| selectedIndex:', $('c-curso')?.selectedIndex);
   const payload={
     aluno_id,
     curso_id:null,
     tipo_curso:tipoCurso,
+    resultado_avaliacao:$('c-resultado')?.value||null,
     numero_certificado:$('c-num')?.value?.trim()||null,
     data_emissao:emissaoRaw||null,
     data_aprovacao:aprovacaoRaw||null,
