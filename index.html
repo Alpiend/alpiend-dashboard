@@ -178,9 +178,91 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
   .grid-2,.grid-65{grid-template-columns:1fr}
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
 }
+
+/* ── LOGIN SCREEN ── */
+#login-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:#0a0c0e;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Barlow Condensed',sans-serif;
+}
+#login-screen.hidden{display:none}
+.login-box{
+  background:#111417;border:1px solid #1e2530;border-radius:16px;
+  padding:48px 40px;width:100%;max-width:400px;
+  box-shadow:0 24px 64px rgba(0,0,0,.6);
+  text-align:center;
+}
+.login-logo{height:56px;margin-bottom:24px}
+.login-title{font-size:22px;font-weight:800;color:#e8edf5;margin-bottom:4px}
+.login-sub{font-size:13px;color:#7f8fa4;margin-bottom:32px}
+.login-field{margin-bottom:16px;text-align:left}
+.login-field label{display:block;font-size:11px;font-weight:700;color:#7f8fa4;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.login-input{
+  width:100%;padding:12px 14px;background:#0a0c0e;
+  border:1px solid #1e2530;border-radius:8px;
+  color:#e8edf5;font-size:15px;font-family:inherit;
+  transition:border .2s;outline:none;
+}
+.login-input:focus{border-color:#f5a623}
+.login-btn{
+  width:100%;padding:14px;margin-top:8px;
+  background:#f5a623;color:#000;border:none;border-radius:8px;
+  font-size:16px;font-weight:800;font-family:inherit;
+  cursor:pointer;transition:opacity .2s;letter-spacing:.3px;
+}
+.login-btn:hover{opacity:.88}
+.login-btn:disabled{opacity:.4;cursor:not-allowed}
+.login-error{
+  background:rgba(231,76,60,.12);border:1px solid rgba(231,76,60,.3);
+  color:#e74c3c;border-radius:8px;padding:10px 14px;
+  font-size:13px;margin-top:12px;display:none;
+}
+.login-user-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.2);
+  border-radius:20px;padding:6px 14px;font-size:13px;color:var(--accent);
+  margin-bottom:20px;
+}
+.login-footer{font-size:11px;color:#3d4a5c;margin-top:24px}
 </style>
 </head>
 <body>
+
+<!-- ══ TELA DE LOGIN ══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <img src="data:image/png;base64,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" class="login-logo" alt="Alpiend">
+    <div class="login-title">Sistema de Gestão</div>
+    <div class="login-sub">Alpiend Treinamentos · Acesso Restrito</div>
+
+    <div id="login-user-display" class="login-user-chip" style="display:none">
+      <span>👤</span><span id="login-user-name"></span>
+    </div>
+
+    <div class="login-field">
+      <label>Usuário</label>
+      <input class="login-input" id="login-usuario" type="text"
+        placeholder="seu usuário" autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('login-senha').focus()">
+    </div>
+    <div class="login-field">
+      <label>Senha</label>
+      <div style="position:relative">
+        <input class="login-input" id="login-senha" type="password"
+          placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')fazerLogin()"
+          style="padding-right:44px">
+        <button onclick="toggleSenha()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#7f8fa4" id="btn-eye">👁</button>
+      </div>
+    </div>
+
+    <button class="login-btn" onclick="fazerLogin()" id="login-btn">Entrar</button>
+    <div class="login-error" id="login-error">Usuário ou senha incorretos</div>
+    <div class="login-footer">Sessão expira após 8 horas de inatividade</div>
+  </div>
+</div>
+
 
 <!-- SIDEBAR -->
 <nav class="sidebar">
@@ -192,6 +274,10 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
         <div class="logo-sub">Gestão de Treinamentos</div>
       </div>
     </div>
+  </div>
+  <div style="padding:10px 14px 4px;border-bottom:1px solid var(--border);margin-bottom:8px">
+    <div id="sidebar-user-badge" style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:6px">👤 Carregando...</div>
+    <button onclick="logout()" style="width:100%;padding:6px 10px;background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.2);border-radius:6px;color:#e74c3c;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🚪 Sair</button>
   </div>
   <div class="nav">
     <div class="nav-label">Principal</div>
@@ -2552,7 +2638,132 @@ function gerarPDF(orc, tipo) {
   win.document.close();
 }
 
+
+// ══════════════════════════════════════════════════════════════════
+// ── SISTEMA DE LOGIN ──
+// ══════════════════════════════════════════════════════════════════
+
+const USUARIOS = {
+  'admin': {
+    hash: 'bf46980b10e63a063841146aa7f6f856311d657a7cdcb6733f3aa85db4ef254d',
+    nome: 'Administrador',
+    icon: '⚙️'
+  },
+  'alpiend': {
+    hash: 'f6544785e276c584c4f8ea1e80e7fd6701caa1cdb90e7f446a7a956d93e9d300',
+    nome: 'Equipe Alpiend',
+    icon: '👤'
+  }
+};
+
+const SESSION_KEY   = 'alpiend_session';
+const SESSION_HORAS = 8; // sessão expira em 8 horas
+
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function salvarSessao(usuario) {
+  const expira = Date.now() + SESSION_HORAS * 60 * 60 * 1000;
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({usuario, expira}));
+}
+
+function verificarSessao() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const sess = JSON.parse(raw);
+    if (Date.now() > sess.expira) {
+      sessionStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return sess.usuario;
+  } catch { return null; }
+}
+
+function logout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('login-usuario').value = '';
+  document.getElementById('login-senha').value = '';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-usuario').focus();
+}
+
+function toggleSenha() {
+  const input = document.getElementById('login-senha');
+  const btn   = document.getElementById('btn-eye');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁';
+  }
+}
+
+async function fazerLogin() {
+  const btn    = document.getElementById('login-btn');
+  const erro   = document.getElementById('login-error');
+  const usuario = document.getElementById('login-usuario').value.trim().toLowerCase();
+  const senha   = document.getElementById('login-senha').value;
+
+  if (!usuario || !senha) {
+    erro.textContent = 'Preencha o usuário e a senha.';
+    erro.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Verificando...';
+  erro.style.display = 'none';
+
+  try {
+    const hashDigitado = await sha256(senha);
+    const user = USUARIOS[usuario];
+
+    if (user && hashDigitado === user.hash) {
+      salvarSessao(usuario);
+      document.getElementById('login-screen').classList.add('hidden');
+      // mostrar nome do usuário logado na sidebar
+      const badge = document.getElementById('sidebar-user-badge');
+      if (badge) badge.textContent = user.icon + ' ' + user.nome;
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+    } else {
+      erro.textContent = '❌ Usuário ou senha incorretos.';
+      erro.style.display = 'block';
+      document.getElementById('login-senha').value = '';
+      document.getElementById('login-senha').focus();
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+    }
+  } catch(e) {
+    erro.textContent = 'Erro interno. Tente novamente.';
+    erro.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+function iniciarLogin() {
+  const usuario = verificarSessao();
+  if (usuario && USUARIOS[usuario]) {
+    // sessão válida — ocultar login direto
+    document.getElementById('login-screen').classList.add('hidden');
+    const badge = document.getElementById('sidebar-user-badge');
+    if (badge) badge.textContent = USUARIOS[usuario].icon + ' ' + USUARIOS[usuario].nome;
+  } else {
+    // mostrar tela de login
+    document.getElementById('login-screen').classList.remove('hidden');
+    setTimeout(() => document.getElementById('login-usuario').focus(), 100);
+  }
+}
+
 // ── INIT ──
+// Verificar sessão antes de tudo
+iniciarLogin();
 setTab('overview');
 loadOverview();
 </script>
