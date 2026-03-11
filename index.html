@@ -410,7 +410,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
       </div>
       <div class="card">
         <div class="card-header"><span class="card-title">📅 Turmas Cadastradas</span><button class="btn btn-primary btn-sm" onclick="openModal('turmaModal')">+ Nova Turma</button></div>
-        <div style="overflow-x:auto"><table class="table"><thead><tr><th>Turma</th><th>Curso</th><th>Início</th><th>Término</th><th>Horário</th><th>Vagas</th><th>Local</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tb-turmas"><tr><td colspan="9" class="loading">⏳ Carregando...</td></tr></tbody></table></div>
+        <div style="overflow-x:auto"><table class="table"><thead><tr><th>Turma</th><th>Curso</th><th>Início</th><th>Término</th><th>Horário</th><th>Vagas</th><th>Local</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tb-turmas"><tr><td colspan="8" class="loading">⏳ Carregando...</td></tr></tbody></table></div>
       </div>
     </div>
 
@@ -424,7 +424,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
             <button class="btn btn-primary btn-sm" onclick="abrirCadastroAluno()">+ Cadastrar</button>
           </div>
         </div>
-        <div style="overflow-x:auto"><table class="table"><thead><tr><th>Aluno</th><th>CPF</th><th>Empresa</th><th>Cargo</th><th>WhatsApp</th><th>E-mail</th><th>Origem</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody id="tb-alunos"><tr><td colspan="9" class="loading">⏳ Carregando...</td></tr></tbody></table></div>
+        <div style="overflow-x:auto"><table class="table"><thead><tr><th>Aluno</th><th>CPF</th><th>Empresa</th><th>Cargo</th><th>WhatsApp</th><th>E-mail</th><th>Origem</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody id="tb-alunos"><tr><td colspan="8" class="loading">⏳ Carregando...</td></tr></tbody></table></div>
       </div>
     </div>
 
@@ -1182,12 +1182,11 @@ function renderAlunosRecent(data,tbody){
 }
 function renderAlunos(data,tbody){
   if(!tbody)return;
-  if(!data?.length){tbody.innerHTML='<tr><td colspan="9"><div class="empty-state"><div class="icon">👤</div><p>Nenhum aluno cadastrado</p></div></td></tr>';return;}
+  if(!data?.length){tbody.innerHTML='<tr><td colspan="8"><div class="empty-state"><div class="icon">👤</div><p>Nenhum aluno cadastrado</p></div></td></tr>';return;}
   tbody.innerHTML=data.map(a=>`<tr>
     <td><span class="flex-row"><span class="avatar-sm">${initials(a.nome)}</span><strong>${a.nome}</strong></span></td>
     <td style="font-size:11px;color:var(--text2)">${a.cpf||'—'}</td>
     <td style="font-size:11px">${a.empresa||'—'}</td>
-    <td style="font-size:11px;color:var(--text2)">${a.cargo||'—'}</td>
     <td>${a.whatsapp?`<button class="btn btn-whatsapp btn-sm" onclick="window.open(buildWpp('${esc(a.whatsapp)}','Olá! Alpiend Treinamentos.'),'_blank')">📱 ${a.whatsapp}</button>`:'—'}</td>
     <td style="font-size:11px;color:var(--text2)">${a.email||'—'}</td>
     <td style="font-size:11px"><span class="chip">${a.origem||'—'}</span></td>
@@ -1224,11 +1223,13 @@ async function excluirAluno(id, nome){
 let editingAlunoId=null;
 function abrirCadastroAluno(){
   editingAlunoId=null;
-  ['a-nome','a-cpf','a-nasc','a-email','a-wpp','a-empresa','a-nf','a-end','a-bairro','a-cidade','a-cep','a-estado','a-pais','a-obs'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  ['a-nome','a-cpf','a-nasc','a-email','a-wpp','a-empresa','a-nf',
+   'a-end','a-bairro','a-cidade','a-cep','a-estado','a-obs'
+  ].forEach(id=>{const el=$(id);if(el)el.value='';});
   if($('a-pf'))$('a-pf').checked=true;
   if($('pj-fields'))$('pj-fields').style.display='none';
-  
   if($('a-pais'))$('a-pais').value='Brasil';
+  if($('a-origem'))$('a-origem').value='Indicação';
   $('alunoModalTitle').textContent='👤 Cadastrar Aluno';
   $('alunoSaveBtn').textContent='✅ Salvar Aluno';
   setCTab('dados');
@@ -1238,24 +1239,57 @@ async function editarAluno(id){
   const {data,error}=await sb.from('alunos').select('*').eq('id',id).single();
   if(error||!data){showToast('❌','Erro ao carregar aluno!','error');return;}
   editingAlunoId=id;
-  $('a-nome').value=data.nome||'';
-  $('a-cpf').value=data.cpf||'';
-  $('a-nasc').value=data.data_nascimento||'';
-  $('a-email').value=data.email||'';
-  $('a-wpp').value=data.whatsapp||'';
-  $('a-empresa').value=data.empresa||'';
-  if($('a-nf')) $('a-nf').value=data.notas_fiscais||'';
-  // PF/PJ
-  const tp=data.tipo_pessoa||'PF';
-  if(tp==='PJ'&&$('a-pj')){$('a-pj').checked=true;if($('pj-fields'))$('pj-fields').style.display='block';}
-  else{if($('a-pf'))$('a-pf').checked=true;if($('pj-fields'))$('pj-fields').style.display='none';}
-  // endereço — tentar parsear o campo composto (compatibilidade retroativa)
-  if($('a-end'))$('a-end').value=data.endereco||'';
-  $('a-end').value=data.endereco||'';
-  $('a-obs').value=data.observacoes||'';
-  if($('a-origem')) $('a-origem').value=data.origem||'Indicação';
-  $('alunoModalTitle').textContent='✏️ Editar Aluno — '+data.nome;
-  $('alunoSaveBtn').textContent='💾 Atualizar Aluno';
+
+  // Limpar TODOS os campos primeiro para não misturar dados anteriores
+  ['a-nome','a-cpf','a-nasc','a-email','a-wpp','a-empresa','a-nf',
+   'a-end','a-bairro','a-cidade','a-cep','a-estado','a-pais','a-obs'
+  ].forEach(fid=>{const el=$(fid);if(el)el.value='';});
+
+  // Preencher dados do aluno
+  $('a-nome').value  = data.nome||'';
+  $('a-cpf').value   = data.cpf||'';
+  $('a-nasc').value  = data.data_nascimento||'';
+  $('a-email').value = data.email||'';
+  $('a-wpp').value   = data.whatsapp||'';
+  $('a-obs').value   = data.observacoes||'';
+  if($('a-origem')) $('a-origem').value = data.origem||'Indicação';
+
+  // PF / PJ
+  const tp = data.tipo_pessoa||'PF';
+  if(tp==='PJ'&&$('a-pj')){
+    $('a-pj').checked=true;
+    if($('pj-fields'))$('pj-fields').style.display='block';
+    if($('a-empresa'))$('a-empresa').value=data.empresa||'';
+    if($('a-nf'))     $('a-nf').value     =data.notas_fiscais||'';
+  } else {
+    if($('a-pf'))$('a-pf').checked=true;
+    if($('pj-fields'))$('pj-fields').style.display='none';
+  }
+
+  // Endereço — o campo 'endereco' pode estar no formato "Rua, Bairro, Cidade, UF, CEP, País"
+  // Tentamos desmontar, senão jogamos tudo no primeiro campo
+  const endStr = data.endereco||'';
+  if(endStr){
+    const partes = endStr.split(', ');
+    // formato esperado: [rua, bairro, cidade, estado, cep, pais]
+    if(partes.length >= 5){
+      if($('a-end'))    $('a-end').value    = partes[0]||'';
+      if($('a-bairro')) $('a-bairro').value = partes[1]||'';
+      if($('a-cidade')) $('a-cidade').value = partes[2]||'';
+      if($('a-estado')) $('a-estado').value = partes[3]||'';
+      if($('a-cep'))    $('a-cep').value    = partes[4]||'';
+      if($('a-pais'))   $('a-pais').value   = partes[5]||'Brasil';
+    } else {
+      // endereço antigo numa string só — colocar no campo rua
+      if($('a-end')) $('a-end').value = endStr;
+      if($('a-pais')) $('a-pais').value = 'Brasil';
+    }
+  } else {
+    if($('a-pais')) $('a-pais').value = 'Brasil';
+  }
+
+  $('alunoModalTitle').textContent = '✏️ Editar Aluno — '+data.nome;
+  $('alunoSaveBtn').textContent    = '💾 Atualizar Aluno';
   setCTab('dados');
   openModal('alunoModal');
 }
@@ -1295,7 +1329,7 @@ async function loadTurmas(){
   const {data,error}=await sb.from('turmas').select('*').order('data_inicio',{ascending:false});
   if(error)return;
   const tb=$('tb-turmas'); if(!tb)return;
-  if(!data?.length){tb.innerHTML='<tr><td colspan="9"><div class="empty-state"><div class="icon">📅</div><p>Nenhuma turma cadastrada</p></div></td></tr>';return;}
+  if(!data?.length){tb.innerHTML='<tr><td colspan="8"><div class="empty-state"><div class="icon">📅</div><p>Nenhuma turma cadastrada</p></div></td></tr>';return;}
   tb.innerHTML=data.map(t=>`<tr>
     <td><strong>${t.nome}</strong></td>
     <td><span class="chip">${t.curso||( t.nome?.toLowerCase().includes('irata')||t.nome?.toLowerCase().includes('corda')?'🧗 Acesso por Cordas — IRATA':'🚒 Resgate Técnico Industrial')}</span></td>
