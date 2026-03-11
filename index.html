@@ -591,7 +591,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
         <div class="form-grid">
           <div class="form-group full"><label class="form-label">Nome Completo *</label><input class="form-input" id="a-nome" placeholder="Nome completo do aluno"></div>
           <div class="form-group"><label class="form-label">CPF *</label><input class="form-input" id="a-cpf" placeholder="000.000.000-00"></div>
-          <div class="form-group"><label class="form-label">RG</label><input class="form-input" id="a-rg" placeholder="00.000.000-0"></div>
+          
           <div class="form-group"><label class="form-label">Data de Nascimento</label><input class="form-input" type="date" id="a-nasc"></div>
           <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" type="email" id="a-email" placeholder="email@exemplo.com"></div>
           <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" id="a-tel" placeholder="(00) 0000-0000"></div>
@@ -615,7 +615,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
               <div class="form-group"><label class="form-label">CNPJ</label><input class="form-input" id="a-nf" placeholder="00.000.000/0001-00"></div>
             </div>
           </div>
-          <div id="pf-cargo-field" class="form-group"><label class="form-label">Cargo / Função</label><input class="form-input" id="a-cargo" placeholder="Ex: Técnico de Segurança"></div>
+
           <div class="form-group full"><label class="form-label">Rua / Logradouro</label><input class="form-input" id="a-end" placeholder="Rua, Av, número e complemento"></div>
         <div class="form-group"><label class="form-label">Bairro</label><input class="form-input" id="a-bairro" placeholder="Bairro"></div>
         <div class="form-group"><label class="form-label">Cidade</label><input class="form-input" id="a-cidade" placeholder="Cidade"></div>
@@ -1224,10 +1224,10 @@ async function excluirAluno(id, nome){
 let editingAlunoId=null;
 function abrirCadastroAluno(){
   editingAlunoId=null;
-  ['a-nome','a-cpf','a-rg','a-nasc','a-email','a-tel','a-wpp','a-empresa','a-nf','a-cargo','a-end','a-bairro','a-cidade','a-cep','a-estado','a-pais','a-obs'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  ['a-nome','a-cpf','a-nasc','a-email','a-tel','a-wpp','a-empresa','a-nf','a-cargo','a-end','a-bairro','a-cidade','a-cep','a-estado','a-pais','a-obs'].forEach(id=>{const el=$(id);if(el)el.value='';});
   if($('a-pf'))$('a-pf').checked=true;
   if($('pj-fields'))$('pj-fields').style.display='none';
-  if($('pf-cargo-field'))$('pf-cargo-field').style.display='block';
+  
   if($('a-pais'))$('a-pais').value='Brasil';
   $('alunoModalTitle').textContent='👤 Cadastrar Aluno';
   $('alunoSaveBtn').textContent='✅ Salvar Aluno';
@@ -1240,7 +1240,6 @@ async function editarAluno(id){
   editingAlunoId=id;
   $('a-nome').value=data.nome||'';
   $('a-cpf').value=data.cpf||'';
-  $('a-rg').value=data.rg||'';
   $('a-nasc').value=data.data_nascimento||'';
   $('a-email').value=data.email||'';
   $('a-tel').value=data.telefone||'';
@@ -1250,8 +1249,8 @@ async function editarAluno(id){
   if($('a-nf')) $('a-nf').value=data.notas_fiscais||'';
   // PF/PJ
   const tp=data.tipo_pessoa||'PF';
-  if(tp==='PJ'&&$('a-pj')){$('a-pj').checked=true;if($('pj-fields'))$('pj-fields').style.display='block';if($('pf-cargo-field'))$('pf-cargo-field').style.display='none';}
-  else{if($('a-pf'))$('a-pf').checked=true;if($('pj-fields'))$('pj-fields').style.display='none';if($('pf-cargo-field'))$('pf-cargo-field').style.display='block';}
+  if(tp==='PJ'&&$('a-pj')){$('a-pj').checked=true;if($('pj-fields'))$('pj-fields').style.display='block';}
+  else{if($('a-pf'))$('a-pf').checked=true;if($('pj-fields'))$('pj-fields').style.display='none';}
   // endereço — tentar parsear o campo composto (compatibilidade retroativa)
   if($('a-end'))$('a-end').value=data.endereco||'';
   $('a-end').value=data.endereco||'';
@@ -1274,7 +1273,7 @@ async function salvarAluno(){
   const endEstado=$('a-estado')?.value||null;
   const endPais=$('a-pais')?.value||'Brasil';
   const endCompleto=[endRua,endBairro,endCidade,endEstado,endCep,endPais].filter(Boolean).join(', ');
-  const payload={nome,cpf:$('a-cpf').value||null,rg:$('a-rg').value||null,data_nascimento:$('a-nasc').value||null,email:$('a-email').value||null,telefone:$('a-tel').value||null,whatsapp:$('a-wpp').value||null,tipo_pessoa:tipoPessoa,empresa:tipoPessoa==='PJ'?($('a-empresa')?.value||null):null,notas_fiscais:tipoPessoa==='PJ'?($('a-nf')?.value||null):null,cargo:$('a-cargo').value||null,endereco:endCompleto||null,observacoes:$('a-obs').value||null,origem:$('a-origem')?.value||null};
+  const payload={nome,cpf:$('a-cpf').value||null,data_nascimento:$('a-nasc').value||null,email:$('a-email').value||null,telefone:$('a-tel').value||null,whatsapp:$('a-wpp').value||null,tipo_pessoa:tipoPessoa,empresa:tipoPessoa==='PJ'?($('a-empresa')?.value||null):null,notas_fiscais:tipoPessoa==='PJ'?($('a-nf')?.value||null):null,cargo:$('a-cargo').value||null,endereco:endCompleto||null,observacoes:$('a-obs').value||null,origem:$('a-origem')?.value||null};
   let error;
   if(editingAlunoId){
     ({error}=await sb.from('alunos').update(payload).eq('id',editingAlunoId));
