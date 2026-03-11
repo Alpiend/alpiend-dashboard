@@ -1931,9 +1931,9 @@ async function loadKPIs(){
   if(!certsOrdenadas.length){tbNotas.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="icon">🎯</div><p>Nenhuma nota registrada ainda</p></div></td></tr>';return;}
   tbNotas.innerHTML=certsOrdenadas.map(c=>{
     const nota=c.nota_aprovacao;
-    const color=nota>=7?'var(--green)':nota>=5?'var(--orange)':'var(--red)';
-    const status=nota>=7?'Aprovado':'Reprovado';
-    const badge=nota>=7?'badge-green':'badge-red';
+    const color=nota>=8.6?'var(--green)':nota>=7?'var(--orange)':'var(--red)';
+    const status=nota>=8.6?'Aprovado':'Reprovado';
+    const badge=nota>=8.6?'badge-green':'badge-red';
     return `<tr>
       <td><span class="flex-row"><span class="avatar-sm">${initials(c.alunos?.nome||'?')}</span>${c.alunos?.nome||'—'}</span></td>
       <td>${(c.tipo_curso||c.curso_id||'').includes('irata')?'🧗 IRATA':'🚒 Resgate'}</td>
@@ -2403,8 +2403,8 @@ async function relIndiceAprovacao(ini,fim){
     <tbody>
     ${g.rows.map(c=>{
       const nota=c.nota_aprovacao;
-      const nc=nota!=null?(nota>=86?'var(--green)':'var(--red)'):'var(--text2)';
-      const aprovado=nota!=null&&nota>=86;
+      const nc=nota!=null?(nota>=8.6?'var(--green)':'var(--red)'):'var(--text2)';
+      const aprovado=nota!=null&&nota>=8.6;
       return `<tr>
         <td><span class="flex-row"><span class="avatar-sm">${initials(c.alunos?.nome||'?')}</span>${c.alunos?.nome||'—'}</span></td>
         <td>${fmtDate(c.data_aprovacao)}</td>
