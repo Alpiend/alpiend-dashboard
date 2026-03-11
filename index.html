@@ -1369,35 +1369,42 @@ function abrirCadastroMatricula(){
   openModal('matriculaModal');
 }
 async function editarMatricula(id){
-  const {data}=await sb.from('matriculas').select('*, alunos(*)').eq('id',id).single();
+  const {data}=await sb.from('matriculas').select('*, alunos(*), turmas(*)').eq('id',id).single();
   if(!data)return;
   editingMatriculaId=id;
   editingAlunoIdFromMatricula=data.aluno_id||null;
-  // preenche campos do aluno
-  $('m-nome').value=data.alunos?.nome||'';
-  $('m-wpp').value=data.alunos?.whatsapp||'';
-  $('m-cpf').value=data.alunos?.cpf||'';
-  $('m-empresa').value=data.alunos?.empresa||'';
-  $('m-rg').value=data.alunos?.rg||'';
-  $('m-email').value=data.alunos?.email||'';
-  $('m-cargo').value=data.alunos?.cargo||'';
+
+  // 1. Carregar selects PRIMEIRO (loadAlunos e loadTurmas recriam innerHTML)
+  await loadAlunos();
+  await loadTurmas();
+
+  // 2. Setar selects após carregamento
   if($('m-aluno-sel'))$('m-aluno-sel').value=data.aluno_id||'';
-  if($('m-valor'))$('m-valor').value=data.valor_pago!=null?data.valor_pago:'';
-  if($('m-valor-cert'))$('m-valor-cert').value=data.valor_certificacao!=null?data.valor_certificacao:'';
-  if($('m-pagto'))$('m-pagto').value=data.forma_pagamento||'PIX';
-  if($('m-status'))$('m-status').value=data.status||'Confirmado';
-  if($('m-num-nf'))$('m-num-nf').value=data.numero_nf||'';
-  if($('m-data-nf'))$('m-data-nf').value=data.data_nf||'';
-  if($('m-status-nf'))$('m-status-nf').value=data.status_nf||'';
-  if($('m-obs-nf'))$('m-obs-nf').value=data.observacao_nf||'';
-  if($('m-datainicio'))$('m-datainicio').value=data.data_matricula||'';
+  if($('m-turma'))$('m-turma').value=data.turma_id||'';
   if($('m-curso'))$('m-curso').value=data.turmas?.curso||'';
+
+  // 3. Preencher campos do aluno (depois do loadAlunos para não serem sobrescritos)
+  if($('m-nome'))  $('m-nome').value  = data.alunos?.nome||'';
+  if($('m-wpp'))   $('m-wpp').value   = data.alunos?.whatsapp||'';
+  if($('m-cpf'))   $('m-cpf').value   = data.alunos?.cpf||'';
+  if($('m-rg'))    $('m-rg').value    = data.alunos?.rg||'';
+  if($('m-email')) $('m-email').value = data.alunos?.email||'';
+  if($('m-empresa'))$('m-empresa').value=data.alunos?.empresa||'';
+  if($('m-cargo')) $('m-cargo').value = data.alunos?.cargo||'';
+
+  // 4. Campos financeiros e NF
+  if($('m-valor'))     $('m-valor').value     = data.valor_pago!=null?data.valor_pago:'';
+  if($('m-valor-cert'))$('m-valor-cert').value= data.valor_certificacao!=null?data.valor_certificacao:'';
+  if($('m-pagto'))     $('m-pagto').value     = data.forma_pagamento||'PIX';
+  if($('m-status'))    $('m-status').value    = data.status||'Confirmado';
+  if($('m-datainicio'))$('m-datainicio').value= data.data_matricula||'';
+  if($('m-num-nf'))    $('m-num-nf').value    = data.numero_nf||'';
+  if($('m-data-nf'))   $('m-data-nf').value   = data.data_nf||'';
+  if($('m-status-nf')) $('m-status-nf').value = data.status_nf||'';
+  if($('m-obs-nf'))    $('m-obs-nf').value    = data.observacao_nf||'';
+
   $('matriculaModalTitle').textContent='✏️ Editar Inscrição';
   $('matriculaSaveBtn').textContent='💾 Atualizar Inscrição';
-  await loadAlunos();
-  if($('m-aluno-sel'))$('m-aluno-sel').value=data.aluno_id||'';
-  await loadTurmas();
-  if($('m-turma'))$('m-turma').value=data.turma_id||'';
   openModal('matriculaModal');
 }
 function fecharCadastroMatricula(){
@@ -1462,7 +1469,8 @@ async function criarTurmaESelecionar(){
 async function salvarMatricula(){
   const nomeManual=$('m-nome')?.value?.trim();
   const alunoSel=$('m-aluno-sel')?.value;
-  let aluno_id=alunoSel||null;
+  // ao editar matrícula, garantir que o aluno_id original seja preservado
+  let aluno_id=alunoSel||editingAlunoIdFromMatricula||null;
   // se não selecionou aluno mas digitou nome manualmente, cria aluno novo
   if(!aluno_id && nomeManual){
     const {data:novoAluno,error:errAluno}=await sb.from('alunos').insert([{
