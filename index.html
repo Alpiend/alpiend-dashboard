@@ -1139,12 +1139,17 @@ function fillAluno(id){
 }
 function clearAluno(){if($('m-al-sel'))$('m-al-sel').value='';['m-nome','m-wpp','m-cpf','m-email','m-emp'].forEach(id=>{const e=$(id);if(e)e.value='';}); }
 function toggleNT(){const b=$('nt-box');if(!b)return;b.style.display=b.style.display==='none'?'block':'none';}
-async function populateTurmasSel(){
-  const{data}=await sb.from('turmas').select('id,nome,status').in('status',['Aberta','Em Andamento']).order('nome');
-  const sel=$('m-turma-sel');if(!sel)return;
-  sel.innerHTML='<option value="">— Selecione ou crie —</option>'+(data||[]).map(t=>'<option value="'+t.id+'">'+esc(t.nome)+'</option>').join('');
-  // Also for despesa
-  const ds=$('d-turma');if(ds)ds.innerHTML='<option value="">Nenhuma / Geral</option>'+(data||[]).map(t=>'<option value="'+t.id+'">'+esc(t.nome)+'</option>').join('');
+async function populateTurmasSel(includeAll=false){
+  const{data}=await sb.from('turmas').select('id,nome,status').order('data_inicio',{ascending:false});
+  const todas=data||[];
+  // For new inscricoes: only active turmas. For edit (includeAll): all turmas
+  const ativas=todas.filter(t=>['Aberta','Em Andamento'].includes(t.status));
+  const listaSel=includeAll?todas:ativas;
+  const sel=$('m-turma-sel');if(sel){
+    sel.innerHTML='<option value="">— Selecione ou crie —</option>'+listaSel.map(t=>'<option value="'+t.id+'">'+(t.status==='Encerrada'?'[Encerrada] ':'')+esc(t.nome)+'</option>').join('');
+  }
+  // Despesa: all turmas
+  const ds=$('d-turma');if(ds)ds.innerHTML='<option value="">Nenhuma / Geral</option>'+todas.map(t=>'<option value="'+t.id+'">'+esc(t.nome)+'</option>').join('');
 }
 async function createTurma(){
   const nome=($('nt-nome')?.value||'').trim(),cursoSel=$('m-curso')?.value;
@@ -1169,13 +1174,40 @@ async function openMatriculaModal(){
 }
 async function editMat(id){
   const{data}=await sb.from('matriculas').select('*,alunos(*),turmas(*)').eq('id',id).single();if(!data)return;
-  editMatId=id;await loadAlunos();await populateTurmasSel();
-  if($('m-al-sel'))$('m-al-sel').value=data.aluno_id||'';if($('m-turma-sel'))$('m-turma-sel').value=data.turma_id||'';if($('m-curso'))$('m-curso').value=data.turmas?.curso||'';
-  if($('m-nome'))$('m-nome').value=data.alunos?.nome||'';if($('m-wpp'))$('m-wpp').value=data.alunos?.whatsapp||'';if($('m-cpf'))$('m-cpf').value=data.alunos?.cpf||'';if($('m-email'))$('m-email').value=data.alunos?.email||'';if($('m-emp'))$('m-emp').value=data.alunos?.empresa||'';
-  if($('m-val'))$('m-val').value=data.valor_pago!=null?data.valor_pago:'';if($('m-irata'))$('m-irata').value=data.valor_certificacao!=null?data.valor_certificacao:'';if($('m-irata-int'))$('m-irata-int').value=data.valor_certificacao_int!=null?data.valor_certificacao_int:'';
-  if($('m-pagto'))$('m-pagto').value=data.forma_pagamento||'PIX';if($('m-status'))$('m-status').value=data.status||'Confirmado';if($('m-data'))$('m-data').value=data.data_matricula||'';
-  if($('m-nf-num'))$('m-nf-num').value=data.numero_nf||'';if($('m-nf-data'))$('m-nf-data').value=data.data_nf||'';if($('m-nf-status'))$('m-nf-status').value=data.status_nf||'';if($('m-nf-obs'))$('m-nf-obs').value=data.observacao_nf||'';
-  $('m-mat-t').textContent='✏️ Editar Inscrição';$('m-mat-save').textContent='💾 Atualizar';openModal('m-mat');
+  editMatId=id;
+  await loadAlunos();
+  await populateTurmasSel(true); // includeAll=true para mostrar turmas encerradas
+  // Preenche campos de texto imediatamente
+  if($('m-nome'))$('m-nome').value=data.alunos?.nome||'';
+  if($('m-wpp'))$('m-wpp').value=data.alunos?.whatsapp||'';
+  if($('m-cpf'))$('m-cpf').value=data.alunos?.cpf||'';
+  if($('m-email'))$('m-email').value=data.alunos?.email||'';
+  if($('m-emp'))$('m-emp').value=data.alunos?.empresa||'';
+  if($('m-val'))$('m-val').value=data.valor_pago!=null?data.valor_pago:'';
+  if($('m-irata'))$('m-irata').value=data.valor_certificacao!=null?data.valor_certificacao:'';
+  if($('m-irata-int'))$('m-irata-int').value=data.valor_certificacao_int!=null?data.valor_certificacao_int:'';
+  if($('m-data'))$('m-data').value=data.data_matricula||'';
+  if($('m-nf-num'))$('m-nf-num').value=data.numero_nf||'';
+  if($('m-nf-data'))$('m-nf-data').value=data.data_nf||'';
+  if($('m-nf-obs'))$('m-nf-obs').value=data.observacao_nf||'';
+  $('m-mat-t').textContent='✏️ Editar Inscrição';
+  $('m-mat-save').textContent='💾 Atualizar';
+  openModal('m-mat');
+  // Selects precisam de setTimeout para garantir que as opções estão renderizadas
+  setTimeout(()=>{
+    // Helper: força seleção por value, fallback por texto
+    const forceSelect=(selId,val)=>{
+      const s=$(selId);if(!s||!val)return;
+      s.value=val;
+      if(s.value!==val){for(let i=0;i<s.options.length;i++){if(s.options[i].value===val){s.selectedIndex=i;break;}}}
+    };
+    forceSelect('m-al-sel', data.aluno_id||'');
+    forceSelect('m-turma-sel', data.turma_id||'');
+    forceSelect('m-curso', data.turmas?.curso||'');
+    forceSelect('m-pagto', data.forma_pagamento||'PIX');
+    forceSelect('m-status', data.status||'Confirmado');
+    forceSelect('m-nf-status', data.status_nf||'');
+  },50);
 }
 async function saveMat(){
   const nomMan=($('m-nome')?.value||'').trim(),alunoSel=$('m-al-sel')?.value;
