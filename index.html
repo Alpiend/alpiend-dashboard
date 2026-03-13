@@ -1606,20 +1606,59 @@ async function saveDesp(){
   const val=pv($('d-val')?.value);
   if(!val||val<=0){toast('⚠️','Informe o valor da despesa!','err');return;}
   const btn=$('d-save-btn');if(btn){btn.disabled=true;btn.textContent='Salvando...';}
-  const p={data:nn($('d-data')?.value)||today(),categoria:nn($('d-cat')?.value)||'Outros',descricao:nn($('d-desc')?.value),valor:val,responsavel:nn($('d-resp')?.value),turma_id:($('d-turma')?.value||'').trim()||null,observacoes:nn($('d-obs')?.value)};
+  const turmaRaw=($('d-turma')?.value||'').trim();
+  // Garantir que turma_id é null (não string vazia) quando não selecionado
+  const turma_id=turmaRaw&&turmaRaw!==''?turmaRaw:null;
+  const p={
+    data:nn($('d-data')?.value)||today(),
+    categoria:nn($('d-cat')?.value)||'Outros',
+    descricao:nn($('d-desc')?.value),
+    valor:val,
+    responsavel:nn($('d-resp')?.value),
+    turma_id:turma_id,
+    observacoes:nn($('d-obs')?.value)
+  };
+  console.log('saveDesp payload:', JSON.stringify(p));
   const res=editDespId?await sb.from('despesas').update(p).eq('id',editDespId):await sb.from('despesas').insert([p]);
   if(btn){btn.disabled=false;btn.textContent=editDespId?'💾 Atualizar':'💾 Salvar Despesa';}
   if(res.error){
-    console.error('saveDesp',res.error,p);
-    let msg=res.error.message||'Erro';
-    if(msg.includes('does not exist'))msg='Tabela "despesas" não existe. Execute o SQL no Supabase.';
-    if(msg.includes('foreign key'))msg='Turma inválida. Selecione "Nenhuma / Geral".';
-    toast('❌',msg,'err');return;
+    console.error('saveDesp ERROR:', res.error);
+    const raw=res.error.message||'Erro desconhecido';
+    let msg=raw;
+    if(raw.includes('relation "despesas" does not exist')||raw.includes('table "despesas"'))
+      msg='❌ Tabela "despesas" não existe no banco. Execute o SQL de criação no Supabase SQL Editor.';
+    else if(raw.includes('violates foreign key'))
+      msg='❌ Turma selecionada não encontrada no banco. Tente "Nenhuma / Geral".';
+    else if(raw.includes('null value in column'))
+      msg='❌ Campo obrigatório em branco: '+raw.split('"')[1];
+    else if(raw.includes('schema cache')||raw.includes('column'))
+      msg='❌ Coluna inválida: '+raw+' — Execute o SQL de migração no Supabase.';
+    toast('❌',msg,'err');
+    return;
   }
   closeModal('m-desp');toast('✅','Despesa salva!');editDespId=null;loadDesp();
 }
 
+async function checkDespTable(){
+  const r=await sb.from('despesas').select('id').limit(1);
+  if(r.error&&(r.error.message.includes('does not exist')||r.error.message.includes('relation'))){
+    const tb=$('tb-desp');
+    if(tb)tb.innerHTML='<tr><td colspan="7">'+
+      '<div style="background:rgba(255,80,80,.1);border:1px solid var(--red);border-radius:10px;padding:20px;margin:10px 0">'+
+      '<div style="font-size:15px;font-weight:700;color:var(--red);margin-bottom:12px">⚠️ Tabela "despesas" não existe no Supabase</div>'+
+      '<div style="font-size:13px;color:var(--t2);margin-bottom:14px">Execute o SQL abaixo no <strong>Supabase SQL Editor</strong> para criar a tabela:</div>'+
+      '<div style="background:var(--bg1);border-radius:8px;padding:14px;font-family:monospace;font-size:11px;color:var(--grn);white-space:pre-wrap;user-select:all">'+
+      'CREATE TABLE IF NOT EXISTS despesas (\n  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,\n  created_at timestamptz DEFAULT now(),\n  data date NOT NULL,\n  categoria text NOT NULL,\n  descricao text,\n  valor numeric(10,2) NOT NULL,\n  responsavel text,\n  turma_id uuid REFERENCES turmas(id) ON DELETE SET NULL,\n  observacoes text\n);\nALTER TABLE despesas ENABLE ROW LEVEL SECURITY;\nDROP POLICY IF EXISTS "public_despesas" ON despesas;\nCREATE POLICY "public_despesas" ON despesas FOR ALL USING (true) WITH CHECK (true);'+
+      '</div>'+
+      '<div style="margin-top:12px;font-size:12px;color:var(--t2)">Após executar o SQL, recarregue a página.</div>'+
+      '</div>'+
+      '</td></tr>';
+    return false;
+  }
+  return true;
+}
 async function loadDesp(){
+  if(!await checkDespTable())return;
   const{data}=await sb.from('despesas').select('*,turmas(nome)').order('data',{ascending:false});
   const desps=data||[];
   const total=desps.reduce((s,d)=>s+(d.valor||0),0);
