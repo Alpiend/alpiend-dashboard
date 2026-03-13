@@ -602,7 +602,7 @@ hr{border:none;border-top:1px solid var(--b1);margin:10px 0}
       <div class="fi"><label class="fl">Taxa IRATA Brasil (R$)</label><input class="inp" type="number" id="m-irata" step="0.01" placeholder="0,00"></div>
       <div class="fi"><label class="fl">IRATA Internacional (R$)</label><input class="inp" type="number" id="m-irata-int" step="0.01" placeholder="0,00"></div>
       <div class="fi"><label class="fl">Forma de Pagamento</label>
-        <select class="sel" id="m-pagto"><option>PIX</option><option>Transferência</option><option>Boleto</option><option>Cartão</option><option>Dinheiro</option><option>A combinar</option></select>
+        <select class="sel" id="m-forma-pag"><option>PIX</option><option>Transferência</option><option>Boleto</option><option>Cartão</option><option>Dinheiro</option><option>A combinar</option></select>
       </div>
     </div>
     <hr>
@@ -1042,11 +1042,11 @@ async function saveAluno(){
   const nome=($('a-nome')?.value||'').trim();if(!nome){toast('⚠️','Preencha o nome!','err');return;}
   const tp=document.querySelector('input[name="a-tp"]:checked')?.value||'PF';
   const end=[$('a-end')?.value,$('a-bairro')?.value,$('a-cidade')?.value,($('a-uf')?.value||'').toUpperCase(),$('a-cep')?.value,$('a-pais')?.value||'Brasil'].filter(Boolean).join(', ');
-  const p={nome,cpf:$('a-cpf').value||null,data_nascimento:$('a-nasc').value||null,email:$('a-email').value||null,whatsapp:$('a-wpp').value||null,tipo_pessoa:tp,empresa:tp==='PJ'?($('a-emp')?.value||null):null,notas_fiscais:tp==='PJ'?($('a-cnpj')?.value||null):null,endereco:end||null,observacoes:$('a-obs').value||null,origem:$('a-origem')?.value||null};
-  let error;
-  if(editAlunoId)({error}=await sb.from('alunos').update(p).eq('id',editAlunoId));
-  else({error}=await sb.from('alunos').insert([p]));
-  if(error){toast('❌','Erro: '+error.message,'err');return;}
+  const p={nome,cpf:($('a-cpf')?.value||'').trim()||null,data_nascimento:$('a-nasc')?.value||null,email:($('a-email')?.value||'').trim()||null,whatsapp:($('a-wpp')?.value||'').trim()||null,tipo_pessoa:tp,empresa:tp==='PJ'?(($('a-emp')?.value||'').trim()||null):null,notas_fiscais:tp==='PJ'?(($('a-cnpj')?.value||'').trim()||null):null,endereco:end||null,observacoes:($('a-obs')?.value||'').trim()||null,origem:$('a-origem')?.value||null};
+  let res;
+  if(editAlunoId) res=await sb.from('alunos').update(p).eq('id',editAlunoId);
+  else res=await sb.from('alunos').insert([p]);
+  if(res.error){toast('❌','Erro ao salvar aluno: '+res.error.message,'err');console.error(res.error,p);return;}
   closeModal('m-aluno');toast('✅',editAlunoId?'Aluno atualizado!':'Aluno cadastrado!');
   if(!editAlunoId&&$('a-bv')?.checked&&p.whatsapp)setTimeout(()=>window.open(wppUrl(p.whatsapp,'Olá *'+nome+'*! 🎉\n\nBem-vindo(a) à *Alpiend Treinamentos*! Seu cadastro foi realizado. 🧗'),'_blank'),600);
   loadAlunos();loadOverview();
@@ -1141,10 +1141,8 @@ async function editTurma(id){
 async function saveTurma(){
   const nome=($('t-nome')?.value||'').trim();if(!nome){toast('⚠️','Informe o nome!','err');return;}
   const p={nome,curso:$('t-curso')?.value||null,data_inicio:$('t-ini')?.value||null,data_fim:$('t-fim')?.value||null,horario:$('t-horario')?.value||null,local:$('t-local')?.value||null,vagas:parseInt($('t-vagas')?.value)||20,status:$('t-status')?.value||'Aberta'};
-  let error;
-  if(editTurmaId)({error}=await sb.from('turmas').update(p).eq('id',editTurmaId));
-  else({error}=await sb.from('turmas').insert([p]));
-  if(error){toast('❌','Erro: '+error.message,'err');return;}
+  const res=editTurmaId?await sb.from('turmas').update(p).eq('id',editTurmaId):await sb.from('turmas').insert([p]);
+  if(res.error){toast('❌','Erro ao salvar turma: '+res.error.message,'err');console.error(res.error);return;}
   closeModal('m-turmamod');toast('✅','Turma salva!');loadTurmas();
 }
 
@@ -1192,7 +1190,7 @@ async function openMatriculaModal(){
   ['m-nome','m-wpp','m-cpf','m-email','m-emp','m-nf-num','m-nf-obs'].forEach(id=>{const e=$(id);if(e)e.value='';});
   if($('m-al-sel'))$('m-al-sel').value='';if($('m-turma-sel'))$('m-turma-sel').value='';if($('m-curso'))$('m-curso').value='';
   if($('m-val'))$('m-val').value='';if($('m-irata'))$('m-irata').value='';if($('m-irata-int'))$('m-irata-int').value='';
-  if($('m-pagto'))$('m-pagto').value='PIX';if($('m-status'))$('m-status').value='Confirmado';
+  if($('m-forma-pag'))$('m-forma-pag').value='PIX';if($('m-status'))$('m-status').value='Confirmado';
   if($('m-nf-status'))$('m-nf-status').value='';if($('m-nf-data'))$('m-nf-data').value='';
   if($('m-data'))$('m-data').value=new Date().toISOString().split('T')[0];
   if($('nt-box'))$('nt-box').style.display='none';
@@ -1230,49 +1228,79 @@ async function editMat(id){
     forceSelect('m-al-sel', data.aluno_id||'');
     forceSelect('m-turma-sel', data.turma_id||'');
     forceSelect('m-curso', data.turmas?.curso||'');
-    forceSelect('m-pagto', data.forma_pagamento||'PIX');
+    forceSelect('m-forma-pag', data.forma_pagamento||'PIX');
     forceSelect('m-status', data.status||'Confirmado');
     forceSelect('m-nf-status', data.status_nf||'');
   },50);
 }
 async function saveMat(){
+  const btn=$('m-mat-save');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+
+  const alunoSel=($('m-al-sel')?.value||'').trim();
   const nomMan=($('m-nome')?.value||'').trim();
-  const alunoSel=$('m-al-sel')?.value||'';
   let aluno_id=alunoSel||null;
-  // Criar aluno novo se não selecionado mas nome preenchido
+
+  // Só cria aluno novo se não há nenhum selecionado e nome foi digitado manualmente
   if(!aluno_id&&nomMan){
-    const{data:nv,error:e}=await sb.from('alunos').insert([{nome:nomMan,whatsapp:($('m-wpp')?.value||'').trim()||null,cpf:($('m-cpf')?.value||'').trim()||null,email:($('m-email')?.value||'').trim()||null,empresa:($('m-emp')?.value||'').trim()||null}]).select().single();
-    if(e){toast('❌','Erro ao criar aluno: '+e.message,'err');return;}
-    aluno_id=nv.id;toast('👤','Aluno criado automaticamente!','inf');
-  } else if(aluno_id&&nomMan){
-    // Atualiza dados do aluno selecionado
-    await sb.from('alunos').update({nome:nomMan,whatsapp:($('m-wpp')?.value||'').trim()||null,cpf:($('m-cpf')?.value||'').trim()||null,email:($('m-email')?.value||'').trim()||null,empresa:($('m-emp')?.value||'').trim()||null}).eq('id',aluno_id);
+    const{data:nv,error:ec}=await sb.from('alunos').insert([{
+      nome:nomMan,
+      whatsapp:($('m-wpp')?.value||'').trim()||null,
+      cpf:($('m-cpf')?.value||'').trim()||null,
+      email:($('m-email')?.value||'').trim()||null,
+      empresa:($('m-emp')?.value||'').trim()||null
+    }]).select().single();
+    if(ec){
+      if(btn){btn.disabled=false;btn.textContent=editMatId?'💾 Atualizar':'✅ Confirmar';}
+      toast('❌','Erro ao criar aluno: '+ec.message,'err');
+      return;
+    }
+    aluno_id=nv.id;
+    toast('👤','Aluno criado!','inf');
   }
-  if(!aluno_id){toast('⚠️','Selecione ou preencha o nome do candidato!','err');return;}
-  // Converte valor: string vazia → null, número → número
-  const pv=(v)=>{const s=String(v||'').replace(',','.').trim();if(!s||s==='0')return null;const n=parseFloat(s);return isNaN(n)?null:n;};
-  // Garante que campos opcionais vazios virem null (não string vazia)
-  const nn=(v)=>{const s=String(v||'').trim();return s===''?null:s;};
+
+  if(!aluno_id){
+    if(btn){btn.disabled=false;btn.textContent=editMatId?'💾 Atualizar':'✅ Confirmar';}
+    toast('⚠️','Selecione ou informe o candidato!','err');
+    return;
+  }
+
+  const pv=v=>{const s=String(v||'').replace(',','.').trim();if(!s)return null;const n=parseFloat(s);return isNaN(n)?null:n;};
+  const nn=v=>{const s=String(v||'').trim();return s===''?null:s;};
+
   const p={
     aluno_id,
-    turma_id:nn($('m-turma-sel')?.value)||null,
+    turma_id:nn($('m-turma-sel')?.value),
     data_matricula:nn($('m-data')?.value)||new Date().toISOString().split('T')[0],
     valor_pago:pv($('m-val')?.value),
     valor_certificacao:pv($('m-irata')?.value),
     valor_certificacao_int:pv($('m-irata-int')?.value),
-    forma_pagamento:nn($('m-pagto')?.value),
+    forma_pagamento:nn($('m-forma-pag')?.value),
     status:nn($('m-status')?.value)||'Confirmado',
     numero_nf:nn($('m-nf-num')?.value),
     data_nf:nn($('m-nf-data')?.value),
     status_nf:nn($('m-nf-status')?.value),
     observacao_nf:nn($('m-nf-obs')?.value)
   };
-  let error;
-  if(editMatId)({error}=await sb.from('matriculas').update(p).eq('id',editMatId));
-  else({error}=await sb.from('matriculas').insert([p]));
-  if(error){toast('❌','Erro ao salvar: '+error.message,'err');console.error('saveMat error:',error,p);return;}
+
+  let res;
+  if(editMatId) res=await sb.from('matriculas').update(p).eq('id',editMatId);
+  else res=await sb.from('matriculas').insert([p]);
+
+  if(btn){btn.disabled=false;btn.textContent=editMatId?'💾 Atualizar':'✅ Confirmar';}
+
+  if(res.error){
+    console.error('saveMat error:',res.error,'payload:',JSON.stringify(p));
+    let msg=res.error.message||'Erro desconhecido';
+    if(msg.includes('foreign key')) msg='Turma ou aluno inválido. Selecione novamente.';
+    if(msg.includes('duplicate')&&msg.includes('cpf')) msg='CPF já cadastrado para outro aluno.';
+    toast('❌',msg,'err');
+    return;
+  }
+
   closeModal('m-mat');
   toast('✅',editMatId?'Inscrição atualizada!':'Inscrição confirmada!');
+  editMatId=null;
   loadMats();loadFin();loadAlunos();
 }
 async function loadMats(){
@@ -1312,8 +1340,9 @@ async function openPagtoModal(id){
 async function savePagto(){
   if(!editPagtoId)return;
   const pv=(v)=>{const n=parseFloat(String(v||'0').replace(',','.'));return isNaN(n)?null:n;};
-  const{error}=await sb.from('matriculas').update({valor_pago:pv($('pg-val')?.value),valor_certificacao:pv($('pg-irata')?.value),valor_certificacao_int:pv($('pg-irata-int')?.value),forma_pagamento:$('pg-forma')?.value||null,status:$('pg-status')?.value||'Confirmado'}).eq('id',editPagtoId);
-  if(error){toast('❌','Erro: '+error.message,'err');return;}
+  const pv2=v=>{const s=String(v||'').replace(',','.').trim();if(!s)return null;const n=parseFloat(s);return isNaN(n)?null:n;};
+  const resPagto=await sb.from('matriculas').update({valor_pago:pv2($('pg-val')?.value),valor_certificacao:pv2($('pg-irata')?.value),valor_certificacao_int:pv2($('pg-irata-int')?.value),forma_pagamento:($('pg-forma')?.value||'').trim()||null,status:$('pg-status')?.value||'Confirmado'}).eq('id',editPagtoId);
+  if(resPagto.error){toast('❌','Erro ao salvar pagamento: '+resPagto.error.message,'err');console.error(resPagto.error);return;}
   closeModal('m-pagto');toast('✅','Pagamento atualizado!');loadMats();loadFin();
 }
 /* ══════════════════════════════════════
@@ -1341,10 +1370,8 @@ async function saveCert(){
   const venc=($('c-venc')?.value||'').trim();if(!venc){toast('⚠️','Preencha o vencimento!','err');return;}
   const notaR=$('c-nota')?.value;const nota=notaR?parseFloat(notaR):null;
   const p={aluno_id,tipo_curso:$('c-tipo')?.value||null,resultado_avaliacao:$('c-resultado')?.value||null,numero_certificado:$('c-num')?.value?.trim()||null,data_emissao:$('c-emissao')?.value||null,data_aprovacao:$('c-aprov')?.value||null,nota_aprovacao:nota!=null&&!isNaN(nota)?nota:null,data_vencimento:venc,status:$('c-status')?.value||'Ativa'};
-  let error;
-  if(editCertId)({error}=await sb.from('certificacoes').update(p).eq('id',editCertId));
-  else({error}=await sb.from('certificacoes').insert([p]));
-  if(error){toast('❌','Erro: '+error.message,'err');return;}
+  const resCert=editCertId?await sb.from('certificacoes').update(p).eq('id',editCertId):await sb.from('certificacoes').insert([p]);
+  if(resCert.error){toast('❌','Erro ao salvar cert.: '+resCert.error.message,'err');console.error(resCert.error);return;}
   closeModal('m-cert');toast('✅',editCertId?'Certificação atualizada!':'Certificação emitida!');loadCerts();
 }
 async function loadCerts(){
@@ -1388,10 +1415,8 @@ async function editLead(id){
 async function saveLead(){
   const nome=($('l-nome')?.value||'').trim();if(!nome){toast('⚠️','Informe o nome!','err');return;}
   const p={nome,empresa:$('l-emp')?.value||null,email:$('l-email')?.value||null,whatsapp:$('l-wpp')?.value||null,curso_interesse:$('l-curso')?.value||null,valor_estimado:$('l-val')?.value?parseFloat($('l-val').value):null,etapa:$('l-etapa')?.value||'Novo Lead',followup_data:$('l-fu')?.value||null,observacoes:$('l-obs')?.value||null};
-  let error;
-  if(editLeadId)({error}=await sb.from('leads').update(p).eq('id',editLeadId));
-  else({error}=await sb.from('leads').insert([p]));
-  if(error){toast('❌','Erro: '+error.message,'err');return;}
+  const resLead=editLeadId?await sb.from('leads').update(p).eq('id',editLeadId):await sb.from('leads').insert([p]);
+  if(resLead.error){toast('❌','Erro ao salvar lead: '+resLead.error.message,'err');console.error(resLead.error);return;}
   closeModal('m-lead');toast('✅','Lead salvo!');loadLeads();
 }
 async function loadLeads(){
@@ -1450,23 +1475,38 @@ async function openDespModal(){
 async function saveDesp(){
   const valStr=($('d-val')?.value||'').trim();
   const val=parseFloat(valStr.replace(',','.'));
-  if(!valStr||isNaN(val)||val<=0){toast('⚠️','Informe o valor da despesa!','err');return;}
+  if(!valStr||isNaN(val)||val<=0){toast('\u26a0\ufe0f','Informe o valor da despesa!','err');return;}
   const dataVal=$('d-data')?.value||new Date().toISOString().split('T')[0];
-  const turmaRaw=$('d-turma')?.value||'';
+  const turmaRaw=($('d-turma')?.value||'').trim();
   const p={
     data:dataVal,
     categoria:$('d-cat')?.value||'Outros',
     descricao:($('d-desc')?.value||'').trim()||null,
     valor:val,
     responsavel:($('d-resp')?.value||'').trim()||null,
-    turma_id:turmaRaw&&turmaRaw!==''?turmaRaw:null,
+    turma_id:(turmaRaw!=='')?turmaRaw:null,
     observacoes:($('d-obs')?.value||'').trim()||null
   };
-  let error;
-  if(editDespId)({error}=await sb.from('despesas').update(p).eq('id',editDespId));
-  else({error}=await sb.from('despesas').insert([p]));
-  if(error){toast('❌','Erro ao salvar: '+error.message,'err');console.error('saveDesp error:',error);return;}
-  closeModal('m-desp');toast('✅','Despesa salva!');loadDesp();
+  const btn=$('d-save');if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  let res;
+  try{
+    if(editDespId) res=await sb.from('despesas').update(p).eq('id',editDespId);
+    else res=await sb.from('despesas').insert([p]);
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent=editDespId?'\ud83d\udcbe Atualizar':'\ud83d\udcbe Salvar Despesa';}
+    toast('\u274c','Erro de rede: '+e.message,'err');return;
+  }
+  if(btn){btn.disabled=false;btn.textContent=editDespId?'\ud83d\udcbe Atualizar':'\ud83d\udcbe Salvar Despesa';}
+  if(res.error){
+    let msg=res.error.message||'Erro desconhecido';
+    console.error('saveDesp error:',res.error,'payload:',JSON.stringify(p));
+    if(msg.includes('does not exist')||msg.includes('42P01'))
+      msg='Tabela "despesas" nao existe. Execute o SQL no Supabase.';
+    else if(msg.includes('foreign key'))
+      msg='Turma invalida. Selecione "Nenhuma / Geral".';
+    toast('\u274c',msg,'err');return;
+  }
+  closeModal('m-desp');toast('\u2705','Despesa salva!');loadDesp();
 }
 async function loadDesp(){
   const{data}=await sb.from('despesas').select('*,turmas(nome)').order('data',{ascending:false});
