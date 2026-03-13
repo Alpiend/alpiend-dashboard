@@ -504,7 +504,7 @@ hr{border:none;border-top:1px solid var(--b1);margin:10px 0}
     <div id="ctc-dados">
       <div class="fg">
         <div class="fi full"><label class="fl">Nome Completo *</label><input class="inp" id="a-nome" placeholder="Nome completo"></div>
-        <div class="fi"><label class="fl">CPF</label><input class="inp" id="a-cpf" placeholder="000.000.000-00" maxlength="14" oninput="this.value=maskCPF(this.value)"></div>
+        <div class="fi"><label class="fl">CPF</label><input class="inp" id="a-cpf" placeholder="000.000.000-00" maxlength="14"></div>
         <div class="fi"><label class="fl">Data de Nascimento</label><input class="inp" type="date" id="a-nasc"></div>
         <div class="fi"><label class="fl">E-mail</label><input class="inp" type="email" id="a-email" placeholder="email@ex.com"></div>
         <div class="fi"><label class="fl">WhatsApp (DDI+DDD)</label><input class="inp" id="a-wpp" placeholder="5511990001234"></div>
@@ -565,7 +565,7 @@ hr{border:none;border-top:1px solid var(--b1);margin:10px 0}
       <div class="fg">
         <div class="fi"><label class="fl">Nome *</label><input class="inp" id="m-nome" placeholder="Nome do candidato"></div>
         <div class="fi"><label class="fl">WhatsApp</label><input class="inp" id="m-wpp" placeholder="5511990001234"></div>
-        <div class="fi"><label class="fl">CPF</label><input class="inp" id="m-cpf" placeholder="000.000.000-00" maxlength="14" oninput="this.value=maskCPF(this.value)"></div>
+        <div class="fi"><label class="fl">CPF</label><input class="inp" id="m-cpf" placeholder="000.000.000-00" maxlength="14"></div>
         <div class="fi"><label class="fl">E-mail</label><input class="inp" id="m-email" placeholder="email@ex.com"></div>
         <div class="fi full"><label class="fl">Empresa</label><input class="inp" id="m-emp" placeholder="Empresa"></div>
       </div>
@@ -849,6 +849,32 @@ async function doLogin(){
 
 /* MÁSCARAS */
 function maskCPF(v){v=v.replace(/\D/g,'').slice(0,11);if(v.length<=3)return v;if(v.length<=6)return v.slice(0,3)+'.'+v.slice(3);if(v.length<=9)return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);}
+function applyMaskInput(el,maskFn){
+  if(!el)return;
+  // Remove inline oninput para evitar duplicação
+  el.removeAttribute('oninput');
+  el.addEventListener('input',function(){
+    const start=this.selectionStart,old=this.value,masked=maskFn(old);
+    this.value=masked;
+    // Reposiciona cursor contando dígitos antes do ponto de edição
+    const digsBefore=(old.slice(0,start).match(/\d/g)||[]).length;
+    let pos=masked.length,digs=0;
+    for(let i=0;i<masked.length;i++){
+      if(/\d/.test(masked[i])){digs++;if(digs===digsBefore){pos=i+1;break;}}
+    }
+    this.setSelectionRange(pos,pos);
+  });
+}
+function setupCPFMasks(){
+  // Aplica em todos os campos CPF existentes e futuros (via MutationObserver)
+  const applyAll=()=>{
+    document.querySelectorAll('input[id$="-cpf"],input[id="a-cpf"],input[id="m-cpf"]').forEach(el=>{
+      if(!el.dataset.masked){el.dataset.masked='1';applyMaskInput(el,maskCPF);}
+    });
+  };
+  applyAll();
+  new MutationObserver(applyAll).observe(document.body,{childList:true,subtree:true});
+}
 function maskCNPJ(v){v=v.replace(/\D/g,'').slice(0,14);if(v.length<=2)return v;if(v.length<=5)return v.slice(0,2)+'.'+v.slice(2);if(v.length<=8)return v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5);if(v.length<=12)return v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'/'+v.slice(8);return v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'/'+v.slice(8,12)+'-'+v.slice(12);}
 function maskCEP(v){v=v.replace(/\D/g,'').slice(0,8);if(v.length<=5)return v;return v.slice(0,5)+'-'+v.slice(5);}
 
@@ -1210,18 +1236,44 @@ async function editMat(id){
   },50);
 }
 async function saveMat(){
-  const nomMan=($('m-nome')?.value||'').trim(),alunoSel=$('m-al-sel')?.value;
+  const nomMan=($('m-nome')?.value||'').trim();
+  const alunoSel=$('m-al-sel')?.value||'';
   let aluno_id=alunoSel||null;
-  if(!aluno_id&&nomMan){const{data:nv,error:e}=await sb.from('alunos').insert([{nome:nomMan,whatsapp:$('m-wpp')?.value||null,cpf:$('m-cpf')?.value||null,email:$('m-email')?.value||null,empresa:$('m-emp')?.value||null}]).select().single();if(e){toast('❌','Erro ao criar aluno: '+e.message,'err');return;}aluno_id=nv.id;toast('👤','Aluno criado!','inf');}
-  else if(aluno_id&&nomMan){await sb.from('alunos').update({nome:nomMan,whatsapp:$('m-wpp')?.value||null,cpf:$('m-cpf')?.value||null,email:$('m-email')?.value||null,empresa:$('m-emp')?.value||null}).eq('id',aluno_id);}
-  if(!aluno_id){toast('⚠️','Informe o candidato!','err');return;}
-  const pv=(v)=>{const n=parseFloat(String(v||'0').replace(',','.'));return isNaN(n)?null:n;};
-  const p={aluno_id,turma_id:$('m-turma-sel')?.value||null,data_matricula:$('m-data')?.value||new Date().toISOString().split('T')[0],valor_pago:pv($('m-val')?.value),valor_certificacao:pv($('m-irata')?.value),valor_certificacao_int:pv($('m-irata-int')?.value),forma_pagamento:$('m-pagto')?.value||null,status:$('m-status')?.value||'Confirmado',numero_nf:$('m-nf-num')?.value||null,data_nf:$('m-nf-data')?.value||null,status_nf:$('m-nf-status')?.value||null,observacao_nf:$('m-nf-obs')?.value||null};
+  // Criar aluno novo se não selecionado mas nome preenchido
+  if(!aluno_id&&nomMan){
+    const{data:nv,error:e}=await sb.from('alunos').insert([{nome:nomMan,whatsapp:($('m-wpp')?.value||'').trim()||null,cpf:($('m-cpf')?.value||'').trim()||null,email:($('m-email')?.value||'').trim()||null,empresa:($('m-emp')?.value||'').trim()||null}]).select().single();
+    if(e){toast('❌','Erro ao criar aluno: '+e.message,'err');return;}
+    aluno_id=nv.id;toast('👤','Aluno criado automaticamente!','inf');
+  } else if(aluno_id&&nomMan){
+    // Atualiza dados do aluno selecionado
+    await sb.from('alunos').update({nome:nomMan,whatsapp:($('m-wpp')?.value||'').trim()||null,cpf:($('m-cpf')?.value||'').trim()||null,email:($('m-email')?.value||'').trim()||null,empresa:($('m-emp')?.value||'').trim()||null}).eq('id',aluno_id);
+  }
+  if(!aluno_id){toast('⚠️','Selecione ou preencha o nome do candidato!','err');return;}
+  // Converte valor: string vazia → null, número → número
+  const pv=(v)=>{const s=String(v||'').replace(',','.').trim();if(!s||s==='0')return null;const n=parseFloat(s);return isNaN(n)?null:n;};
+  // Garante que campos opcionais vazios virem null (não string vazia)
+  const nn=(v)=>{const s=String(v||'').trim();return s===''?null:s;};
+  const p={
+    aluno_id,
+    turma_id:nn($('m-turma-sel')?.value)||null,
+    data_matricula:nn($('m-data')?.value)||new Date().toISOString().split('T')[0],
+    valor_pago:pv($('m-val')?.value),
+    valor_certificacao:pv($('m-irata')?.value),
+    valor_certificacao_int:pv($('m-irata-int')?.value),
+    forma_pagamento:nn($('m-pagto')?.value),
+    status:nn($('m-status')?.value)||'Confirmado',
+    numero_nf:nn($('m-nf-num')?.value),
+    data_nf:nn($('m-nf-data')?.value),
+    status_nf:nn($('m-nf-status')?.value),
+    observacao_nf:nn($('m-nf-obs')?.value)
+  };
   let error;
   if(editMatId)({error}=await sb.from('matriculas').update(p).eq('id',editMatId));
   else({error}=await sb.from('matriculas').insert([p]));
-  if(error){toast('❌','Erro: '+error.message,'err');return;}
-  closeModal('m-mat');toast('✅',editMatId?'Inscrição atualizada!':'Inscrição confirmada!');loadMats();loadFin();loadAlunos();
+  if(error){toast('❌','Erro ao salvar: '+error.message,'err');console.error('saveMat error:',error,p);return;}
+  closeModal('m-mat');
+  toast('✅',editMatId?'Inscrição atualizada!':'Inscrição confirmada!');
+  loadMats();loadFin();loadAlunos();
 }
 async function loadMats(){
   const tFil=$('cal-turma')?.value||'',sFil=$('cal-status')?.value||'';
@@ -1396,12 +1448,24 @@ async function openDespModal(){
   openModal('m-desp');
 }
 async function saveDesp(){
-  const val=parseFloat($('d-val')?.value||'0');if(!val||isNaN(val)){toast('⚠️','Informe o valor!','err');return;}
-  const p={data:$('d-data')?.value||new Date().toISOString().split('T')[0],categoria:$('d-cat')?.value||'Outros',descricao:$('d-desc')?.value||null,valor:val,responsavel:$('d-resp')?.value||null,turma_id:$('d-turma')?.value||null,observacoes:$('d-obs')?.value||null};
+  const valStr=($('d-val')?.value||'').trim();
+  const val=parseFloat(valStr.replace(',','.'));
+  if(!valStr||isNaN(val)||val<=0){toast('⚠️','Informe o valor da despesa!','err');return;}
+  const dataVal=$('d-data')?.value||new Date().toISOString().split('T')[0];
+  const turmaRaw=$('d-turma')?.value||'';
+  const p={
+    data:dataVal,
+    categoria:$('d-cat')?.value||'Outros',
+    descricao:($('d-desc')?.value||'').trim()||null,
+    valor:val,
+    responsavel:($('d-resp')?.value||'').trim()||null,
+    turma_id:turmaRaw&&turmaRaw!==''?turmaRaw:null,
+    observacoes:($('d-obs')?.value||'').trim()||null
+  };
   let error;
   if(editDespId)({error}=await sb.from('despesas').update(p).eq('id',editDespId));
   else({error}=await sb.from('despesas').insert([p]));
-  if(error){toast('❌','Erro: '+error.message,'err');return;}
+  if(error){toast('❌','Erro ao salvar: '+error.message,'err');console.error('saveDesp error:',error);return;}
   closeModal('m-desp');toast('✅','Despesa salva!');loadDesp();
 }
 async function loadDesp(){
@@ -1584,6 +1648,7 @@ async function relDespesas(ini,fim){
 
 /* INIT */
 (function(){
+  setupCPFMasks();
   const u=getSess();
   if(u&&USERS[u])showApp(u);
   else setTimeout(()=>{const el=$('li-u');if(el)el.focus();},100);
