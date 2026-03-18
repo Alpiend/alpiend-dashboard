@@ -3,383 +3,557 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Alpiend — Dashboard</title>
+<title>Alpiend — Sistema de Gestão</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
-
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#07090d;--bg2:#0e1117;--bg3:#161b24;--bg4:#1e2535;
-  --brd:#252d3d;--brd2:#2e3a50;
-  --acc:#f59e0b;--acc2:#d97706;--acc3:#fbbf24;
-  --t1:#f1f5f9;--t2:#8899aa;--t3:#4a5568;
-  --grn:#22c55e;--red:#ef4444;--blu:#3b82f6;--pur:#a855f7;--orn:#f97316;
-  --rad:10px;--rad2:14px;--sh:0 4px 24px rgba(0,0,0,.4);
+  --bg:#060810;--bg2:#0b0f1a;--bg3:#111827;--bg4:#1a2235;
+  --brd:#1e2d42;--brd2:#253450;
+  --acc:#f59e0b;--acc2:#d97706;--acc3:#fde68a;
+  --t1:#f0f4ff;--t2:#7a8fa8;--t3:#3d4e65;
+  --grn:#10b981;--red:#f43f5e;--blu:#3b82f6;--pur:#8b5cf6;--orn:#f97316;--cyan:#06b6d4;
+  --grd:linear-gradient(135deg,#f59e0b,#f97316);
+  --grd2:linear-gradient(135deg,#10b981,#06b6d4);
+  --grd3:linear-gradient(135deg,#8b5cf6,#3b82f6);
+  --shadow:0 4px 24px rgba(0,0,0,.5);--shadow-sm:0 2px 12px rgba(0,0,0,.3);
+  --r:12px;--r-sm:8px;--r-lg:18px;
 }
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);font-size:14px;min-height:100vh}
-/* SCROLLBAR */
-::-webkit-scrollbar{width:6px;height:6px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:3px}
-/* LOGIN */
-#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999}
-.login-box{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--rad2);padding:36px 32px;width:340px;display:flex;flex-direction:column;gap:18px}
-.login-logo{text-align:center;margin-bottom:4px}
-.login-logo img{height:52px}
-.login-title{text-align:center;font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--acc)}
-.login-err{font-size:12px;color:var(--red);text-align:center;min-height:16px}
-/* LAYOUT */
-#app{display:none}
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--bg2);border-right:1px solid var(--brd);display:flex;flex-direction:column;z-index:100}
-.sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px}
-.sb-logo img{height:32px}
-.sb-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--t1);line-height:1.2}
-.sb-brand span{color:var(--acc)}
-.sb-nav{flex:1;overflow-y:auto;padding:10px 8px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--t2);transition:.15s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left}
-.nav-item:hover{background:var(--bg3);color:var(--t1)}
-.nav-item.on{background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(245,158,11,.08));color:var(--acc);font-weight:600}
-.nav-item .ni{font-size:16px;width:20px;text-align:center}
-.sb-footer{padding:12px 8px;border-top:1px solid var(--brd)}
-.main{margin-left:220px;min-height:100vh;display:flex;flex-direction:column}
-.topbar{background:var(--bg2);border-bottom:1px solid var(--brd);padding:0 24px;height:56px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
-.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.content{padding:24px;flex:1}
-/* PANELS */
-.panel{display:none}.panel.on{display:block}
-/* CARDS & GRID */
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
-.stat-card{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--rad2);padding:18px 20px}
-.stat-card .sc-label{font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
-.stat-card .sc-val{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;color:var(--acc);line-height:1}
-.stat-card .sc-sub{font-size:11px;color:var(--t2);margin-top:4px}
-/* SECTION HEADER */
-.sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-.sec-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
-.sec-hdr .ml{margin-left:auto}
-/* TABLE */
-.tbl-wrap{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--rad2);overflow:hidden}
-table{width:100%;border-collapse:collapse}
-th{padding:11px 14px;text-align:left;font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--brd);white-space:nowrap}
-td{padding:11px 14px;border-bottom:1px solid var(--brd);font-size:13px;vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(255,255,255,.02)}
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;transition:.15s;white-space:nowrap}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-p{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#000;font-weight:600}
-.btn-p:hover:not(:disabled){background:linear-gradient(135deg,var(--acc3),var(--acc))}
-.btn-g{background:var(--bg3);color:var(--t1);border:1px solid var(--brd)}
-.btn-g:hover:not(:disabled){background:var(--bg4);border-color:var(--brd2)}
-.btn-d{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25)}
-.btn-d:hover:not(:disabled){background:rgba(239,68,68,.22)}
-.btn-w{background:rgba(34,197,94,.1);color:var(--grn);border:1px solid rgba(34,197,94,.2)}
-.btn-sm{padding:5px 12px;font-size:12px}
-.btn-xs{padding:4px 8px;font-size:11px;border-radius:6px}
-/* CHIP / BADGE */
-.chip{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;background:var(--bg3);border:1px solid var(--brd)}
-.chip.bg{background:rgba(34,197,94,.12);color:var(--grn);border-color:rgba(34,197,94,.25)}
-.chip.br{background:rgba(239,68,68,.12);color:var(--red);border-color:rgba(239,68,68,.25)}
-.chip.bo{background:rgba(249,115,22,.12);color:var(--orn);border-color:rgba(249,115,22,.25)}
-.chip.bz{background:rgba(59,130,246,.1);color:var(--blu);border-color:rgba(59,130,246,.2)}
-.chip.bp{background:rgba(168,85,247,.1);color:var(--pur);border-color:rgba(168,85,247,.2)}
-/* AVATAR */
-.av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#000;flex-shrink:0}
-.av-sm{width:28px;height:28px;font-size:11px}
-.av-lg{width:48px;height:48px;font-size:17px}
-/* FORM */
-.modal-body .fg,.modal-body>.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.fi{display:flex;flex-direction:column;gap:5px}
-.fi.full{grid-column:1/-1}
-.fl{font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.6px}
-.inp{background:var(--bg3);border:1px solid var(--brd);border-radius:8px;padding:9px 12px;color:var(--t1);font-size:13px;font-family:'DM Sans',sans-serif;width:100%;transition:.15s}
-.inp:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(245,158,11,.12)}
-.inp::placeholder{color:var(--t3)}
-.sel{background:var(--bg3);border:1px solid var(--brd);border-radius:8px;padding:9px 12px;color:var(--t1);font-size:13px;font-family:'DM Sans',sans-serif;width:100%;cursor:pointer}
-.sel:focus{outline:none;border-color:var(--acc)}
-textarea.inp{resize:vertical;min-height:70px}
-/* MODAL */
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center;padding:16px}
-.ov.open{display:flex}
-.modal{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--rad2);width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--sh)}
-.modal-head{padding:16px 20px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px;flex-shrink:0}
-.modal-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;flex:1}
-.modal-body{padding:20px;overflow-y:auto;flex:1}
-.modal-foot{padding:14px 20px;border-top:1px solid var(--brd);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0}
-/* TABS (inside modal) */
-.ctabs{display:flex;gap:4px;margin-bottom:16px;background:var(--bg3);padding:4px;border-radius:8px}
-.ctab-btn{flex:1;padding:7px;border:none;background:none;color:var(--t2);font-size:12px;font-weight:600;cursor:pointer;border-radius:6px;transition:.15s}
-.ctab-btn.on{background:var(--bg2);color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.3)}
-/* CARDS turmas */
-.turma-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-.tcard{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--rad2);padding:18px;transition:.15s}
-.tcard:hover{border-color:var(--brd2)}
-.tcard .tc-curso{font-size:10px;color:var(--acc);text-transform:uppercase;font-weight:700;letter-spacing:.8px}
-.tcard .tc-nome{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:4px 0 8px}
-.tcard .tc-meta{font-size:11px;color:var(--t2);margin-bottom:10px}
-.prog-bar{background:var(--bg3);border-radius:4px;height:6px;overflow:hidden;margin:6px 0}
-.prog-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:.3s}
-/* TABS (main) */
-.fin-tabs,.rel-tabs{display:flex;gap:4px;margin-bottom:18px}
-.ftab,.rtab{padding:8px 16px;border:1px solid var(--brd);border-radius:8px;background:var(--bg2);color:var(--t2);cursor:pointer;font-size:12px;font-weight:600;transition:.15s}
-.ftab.on,.rtab.on{background:var(--acc);color:#000;border-color:var(--acc)}
-/* KANBAN */
-.kanban{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:16px}
-.k-col{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--rad2);padding:12px}
-.k-col-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;color:var(--t2)}
-.k-card{background:var(--bg3);border:1px solid var(--brd);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;transition:.15s}
-.k-card:hover{border-color:var(--brd2)}
-/* PERFIL */
-.perfil-panel{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--rad2);padding:22px;margin-top:16px}
-.perfil-hdr{display:flex;align-items:center;gap:14px;margin-bottom:18px}
-/* ALERT */
-.alert{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--red);margin-bottom:12px}
-.alert.info{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.2);color:var(--acc)}
-/* TOAST */
-#toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.toast{background:var(--bg3);border:1px solid var(--brd2);border-radius:10px;padding:11px 16px;font-size:13px;display:flex;align-items:center;gap:8px;box-shadow:var(--sh);animation:toastIn .2s ease;pointer-events:all;max-width:360px}
-.toast.err{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.1)}
-.toast.inf{border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.08)}
-@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
-/* UTIL */
-.row{display:flex;align-items:center}
-.gap{gap:10px}
-.ml{margin-left:auto}
-.empty{text-align:center;padding:40px 20px;color:var(--t2)}
-.empty-ico{font-size:36px;margin-bottom:10px}
-hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
-.sec-sub{font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin:16px 0 10px}
+::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:99px}
 
+/* LOGIN */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);
+  background-image:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(245,158,11,.15),transparent),
+    radial-gradient(ellipse 40% 40% at 90% 90%,rgba(59,130,246,.08),transparent);}
+.login-card{background:var(--bg3);border:1px solid var(--brd2);border-radius:24px;padding:48px 44px;
+  width:420px;max-width:92vw;box-shadow:0 40px 100px rgba(0,0,0,.6),0 0 0 1px rgba(245,158,11,.06);
+  animation:fadeUp .4s ease;}
+.login-logo{text-align:center;margin-bottom:36px}
+.login-logo-img{width:60px;height:60px;border-radius:14px;object-fit:cover;box-shadow:0 8px 24px rgba(245,158,11,.3)}
+.login-logo-emoji{width:60px;height:60px;background:var(--grd);border-radius:14px;display:inline-flex;
+  align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(245,158,11,.3)}
+.login-logo h1{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-top:14px;letter-spacing:-.2px}
+.login-logo p{font-size:11px;color:var(--t2);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase}
+.login-card input{width:100%;padding:13px 16px;background:var(--bg4);border:1.5px solid var(--brd);
+  border-radius:var(--r-sm);color:var(--t1);font-size:14px;font-family:inherit;margin-bottom:12px;transition:border-color .2s;}
+.login-card input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(245,158,11,.1)}
+.login-err{color:var(--red);font-size:12px;margin-bottom:12px;text-align:center;min-height:18px}
+.login-btn{width:100%;padding:14px;background:var(--grd);border:none;border-radius:var(--r-sm);
+  color:#000;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;
+  transition:all .2s;letter-spacing:.3px;}
+.login-btn:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 8px 24px rgba(245,158,11,.3)}
+
+/* APP */
+#app{display:none;height:100vh;flex-direction:column}
+.topbar{height:58px;background:rgba(11,15,26,.95);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--brd);display:flex;align-items:center;padding:0 20px;gap:14px;
+  position:sticky;top:0;z-index:100;flex-shrink:0;}
+.topbar-brand{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;letter-spacing:.5px;
+  background:var(--grd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.topbar-sep{width:1px;height:20px;background:var(--brd);flex-shrink:0}
+.topbar-title{font-size:13px;color:var(--t2);font-weight:500;flex:1}
+.topbar-user{font-size:12px;color:var(--t2)}
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:224px;background:var(--bg2);border-right:1px solid var(--brd);
+  display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;padding:12px 8px;}
+.sb-brand{display:flex;align-items:center;gap:10px;padding:10px 12px 16px;
+  border-bottom:1px solid var(--brd);margin-bottom:8px;}
+.sb-brand img{width:32px;height:32px;border-radius:8px;object-fit:cover}
+.sb-brand-txt{font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:var(--t1);letter-spacing:.3px}
+.sb-brand-sub{font-size:10px;color:var(--t2)}
+.nav-section{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;
+  font-weight:700;padding:12px 12px 4px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:var(--r-sm);
+  cursor:pointer;color:var(--t2);font-size:13px;font-weight:500;transition:all .15s;margin-bottom:1px;
+  border:none;background:transparent;width:100%;text-align:left;}
+.nav-item:hover{background:var(--bg4);color:var(--t1)}
+.nav-item.on{background:rgba(245,158,11,.1);color:var(--acc);font-weight:600;
+  border-left:2px solid var(--acc);margin-left:-1px;}
+.ni{font-size:14px;width:20px;text-align:center;flex-shrink:0}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;background:var(--bg)}
+.content{padding:24px;max-width:1440px}
+
+/* PANELS */
+.panel{display:none;animation:fadeIn .2s ease}
+.panel.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+/* SEC HEADER */
+.sec-hdr{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.sec-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;letter-spacing:-.3px}
+.ml{margin-left:auto}.row{display:flex;align-items:center}.gap{gap:10px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r-sm);
+  border:none;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;
+  transition:all .15s;white-space:nowrap;}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--grd);color:#000;box-shadow:0 2px 12px rgba(245,158,11,.2)}
+.btn-p:hover{box-shadow:0 4px 20px rgba(245,158,11,.4);opacity:.92}
+.btn-g{background:var(--bg4);color:var(--t1);border:1px solid var(--brd)}
+.btn-g:hover{background:var(--bg3);border-color:var(--brd2)}
+.btn-d{background:rgba(244,63,94,.1);color:var(--red);border:1px solid rgba(244,63,94,.2)}
+.btn-d:hover{background:rgba(244,63,94,.18)}
+.btn-w{background:rgba(16,185,129,.1);color:var(--grn);border:1px solid rgba(16,185,129,.2)}
+.btn-w:hover{background:rgba(16,185,129,.18)}
+.btn-sm{padding:6px 12px;font-size:12px}.btn-xs{padding:4px 8px;font-size:11px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* STAT CARDS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);
+  padding:18px 20px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--grd)}
+.stat-card.grn::before{background:var(--grd2)}.stat-card.red::before{background:linear-gradient(135deg,var(--red),var(--orn))}
+.stat-card.pur::before{background:var(--grd3)}.stat-card.cyn::before{background:linear-gradient(135deg,var(--cyan),var(--blu))}
+.sc-label{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:8px}
+.sc-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--t1);line-height:1}
+.sc-sub{font-size:11px;color:var(--t2);margin-top:5px}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.two-col{grid-template-columns:1fr}}
+
+/* BOX */
+.box{background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);padding:20px}
+.box-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--t2);margin-bottom:14px}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--brd)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--bg4);color:var(--t2);font-size:10px;text-transform:uppercase;
+  letter-spacing:.8px;padding:10px 14px;text-align:left;font-weight:700;border-bottom:1px solid var(--brd);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--brd);transition:background .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+td{padding:11px 14px;vertical-align:middle}
+td strong{font-weight:600;color:var(--t1)}
+
+/* AVATAR */
+.av{background:var(--grd);border-radius:50%;display:inline-flex;align-items:center;
+  justify-content:center;font-weight:700;color:#000;font-family:'Syne',sans-serif;flex-shrink:0;}
+.av-sm{width:32px;height:32px;font-size:11px}
+.av-lg{width:54px;height:54px;font-size:18px}
+
+/* CHIPS */
+.chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;
+  font-size:11px;font-weight:600;letter-spacing:.2px;white-space:nowrap;}
+.chip.bg{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.25)}
+.chip.br{background:rgba(244,63,94,.1);color:#fb7185;border:1px solid rgba(244,63,94,.2)}
+.chip.bo{background:rgba(249,115,22,.1);color:#fb923c;border:1px solid rgba(249,115,22,.2)}
+.chip.bp{background:rgba(139,92,246,.1);color:#a78bfa;border:1px solid rgba(139,92,246,.2)}
+.chip.bz{background:var(--bg4);color:var(--t2);border:1px solid var(--brd)}
+.chip.bc{background:rgba(6,182,212,.1);color:#22d3ee;border:1px solid rgba(6,182,212,.2)}
+
+/* ALERTS */
+.alert{padding:12px 16px;border-radius:var(--r-sm);margin-bottom:14px;
+  background:rgba(244,63,94,.07);border-left:3px solid var(--red);font-size:13px;}
+.alert.info{background:rgba(6,182,212,.07);border-left-color:var(--cyan)}
+.alert.ok{background:rgba(16,185,129,.07);border-left-color:var(--grn)}
+.alert.warn{background:rgba(249,115,22,.07);border-left-color:var(--orn)}
+
+/* FORMS */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.fi{display:flex;flex-direction:column;gap:5px}.fi.full{grid-column:1/-1}
+.fl{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px}
+.inp,.sel{padding:9px 12px;background:var(--bg4);border:1.5px solid var(--brd);
+  border-radius:var(--r-sm);color:var(--t1);font-size:13px;font-family:inherit;transition:border-color .15s;width:100%;}
+.inp:focus,.sel:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(245,158,11,.1)}
+textarea.inp{min-height:80px;resize:vertical;line-height:1.5}
+.sel option{background:var(--bg3)}
+.sec-sub{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--acc);
+  margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--brd);}
+
+/* MODAL */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;
+  display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
+.ov.open{display:flex;animation:fadeIn .15s ease}
+.modal{background:var(--bg3);border:1px solid var(--brd2);border-radius:var(--r-lg);
+  width:100%;max-height:90vh;display:flex;flex-direction:column;
+  box-shadow:0 32px 80px rgba(0,0,0,.7);animation:fadeUp .2s ease;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;
+  padding:18px 22px;border-bottom:1px solid var(--brd);flex-shrink:0;}
+.modal-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.modal-body{padding:20px 22px;overflow-y:auto;flex:1}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--brd);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+
+/* TURMA CARDS */
+.turma-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.tcard{background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);
+  padding:18px;transition:all .2s;position:relative;overflow:hidden;}
+.tcard:hover{border-color:var(--brd2);transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.tcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--brd2)}
+.tcard.s-aberta::before{background:var(--grd2)}.tcard.s-andamento::before{background:var(--grd)}
+.tc-curso{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--acc);margin-bottom:5px}
+.tc-nome{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:8px;line-height:1.3}
+.tc-meta{font-size:11px;color:var(--t2);margin-bottom:12px;line-height:1.7}
+.prog-bar{height:5px;background:var(--bg4);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;background:var(--grd);transition:width .6s ease}
+
+/* TABS */
+.ctabs{display:flex;gap:4px;background:var(--bg4);padding:4px;border-radius:var(--r-sm);margin-bottom:16px;width:fit-content}
+.ctab-btn{padding:7px 16px;border-radius:6px;border:none;background:transparent;color:var(--t2);
+  font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;}
+.ctab-btn.on{background:var(--bg3);color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.rel-tabs{display:flex;gap:4px;flex-wrap:wrap;background:var(--bg3);padding:6px;
+  border-radius:var(--r);border:1px solid var(--brd);margin-bottom:18px;}
+.rtab{padding:8px 16px;border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:600;
+  color:var(--t2);transition:all .15s;border:none;background:transparent;font-family:inherit;}
+.rtab:hover{color:var(--t1);background:var(--bg4)}
+.rtab.on{background:var(--grd);color:#000}
+.fin-tabs{display:flex;gap:4px;background:var(--bg3);padding:5px;
+  border-radius:var(--r);border:1px solid var(--brd);margin-bottom:18px;width:fit-content;}
+.ftab{padding:7px 20px;border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:600;
+  color:var(--t2);transition:all .15s;border:none;background:transparent;font-family:inherit;}
+.ftab:hover{color:var(--t1);background:var(--bg4)}
+.ftab.on{background:var(--grd);color:#000}
+
+/* KANBAN */
+.kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
+.k-col{min-width:175px;max-width:195px;background:var(--bg3);border:1px solid var(--brd);
+  border-radius:var(--r);padding:12px;flex-shrink:0}
+.k-col-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--t2);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--brd);}
+.k-card{background:var(--bg4);border:1px solid var(--brd);border-radius:var(--r-sm);
+  padding:10px;margin-bottom:8px;cursor:pointer;transition:all .15s;font-size:12px;}
+.k-card:hover{border-color:var(--acc);box-shadow:0 2px 8px rgba(245,158,11,.15)}
+
+/* PERFIL */
+.perfil-panel{background:var(--bg3);border:1px solid var(--brd2);border-radius:var(--r-lg);
+  padding:24px;margin-top:18px;animation:fadeUp .2s ease;}
+.perfil-hdr{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+
+/* FILTERS */
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.filters input,.filters select{padding:7px 12px;background:var(--bg3);border:1px solid var(--brd);
+  border-radius:var(--r-sm);color:var(--t1);font-size:12px;font-family:inherit;max-width:220px;}
+.filters input:focus,.filters select:focus{outline:none;border-color:var(--acc)}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 20px;color:var(--t3)}
+.empty-ico{font-size:40px;margin-bottom:10px;opacity:.4}
+
+/* TOAST */
+#toast-wrap{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--bg3);border:1px solid var(--brd2);border-radius:var(--r);
+  padding:12px 18px;font-size:13px;display:flex;align-items:center;gap:10px;
+  box-shadow:var(--shadow);animation:slideIn .25s ease;min-width:240px;max-width:380px;
+  pointer-events:all;border-left:3px solid var(--grn);}
+.toast.err{border-left-color:var(--red)}.toast.inf{border-left-color:var(--cyan)}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+/* SECTION SUB */
+.sec-sub{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--acc);
+  margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--brd);}
+
+/* PRINT */
+#print-area{display:none}
+@media print{
+  body{background:#fff!important;color:#000!important;font-family:Arial,sans-serif;font-size:12px}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #login-screen,#app{display:none!important}
+  #print-area{display:block!important;padding:20px}
+  #print-area .print-header{display:flex;justify-content:space-between;border-bottom:2px solid #1a2340;padding-bottom:12px;margin-bottom:18px}
+  #print-area .print-logo{font-size:18px;font-weight:800;color:#1a2340}
+  #print-area .print-meta{text-align:right;font-size:11px;color:#555}
+  #print-area table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11px}
+  #print-area th{background:#1a2340!important;color:#fff!important;padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase}
+  #print-area td{padding:6px 10px;border-bottom:1px solid #eee}
+  #print-area tr:nth-child(even) td{background:#f8f9fa}
+  #print-area .chip{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;border:1px solid #ccc}
+  #print-area .chip.bg{background:#d4f4dd;border-color:#2ecc71;color:#1a7a40}
+  #print-area .chip.br{background:#fde8e8;border-color:#e74c3c;color:#a52020}
+  #print-area .chip.bo{background:#fef3cd;border-color:#f39c12;color:#7d5a00}
+  #print-area .print-summary{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+  #print-area .print-sum-card{background:#f4f6fb;border:1px solid #dde;border-radius:8px;padding:10px 16px;min-width:140px}
+  #print-area .print-sum-label{font-size:10px;color:#666;text-transform:uppercase;margin-bottom:4px}
+  #print-area .print-sum-val{font-size:15px;font-weight:700;color:#1a2340}
+  #print-area .print-footer{margin-top:20px;padding-top:10px;border-top:1px solid #ddd;font-size:10px;color:#888;display:flex;justify-content:space-between}
+  .no-print{display:none!important}
+  @page{margin:1.5cm;size:A4}
+}
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo"><img src="data:image/png;base64,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" alt="Alpiend" onerror="this.style.display='none'"></div>
-    <div class="login-title">Alpiend Treinamentos</div>
-    <div>
-      <div class="fl" style="margin-bottom:5px">Usuário</div>
-      <input class="inp" id="l-user" placeholder="usuário" autocomplete="username">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="data:image/png;base64,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" class="login-logo-img" alt="Alpiend" onerror="this.style.display='none'">
+      <h1>Alpiend Treinamentos</h1>
+      <p>Gestão de Treinamentos</p>
     </div>
-    <div>
-      <div class="fl" style="margin-bottom:5px">Senha</div>
-      <input class="inp" id="l-pass" type="password" placeholder="senha" autocomplete="current-password">
-    </div>
+    <input class="inp" id="l-user" placeholder="Usuário" autocomplete="username">
+    <input class="inp" id="l-pass" type="password" placeholder="Senha" autocomplete="current-password">
     <div id="l-err" class="login-err"></div>
-    <button class="btn btn-p" style="width:100%;justify-content:center" onclick="doLogin()">Entrar</button>
+    <button class="login-btn" onclick="doLogin()">Entrar no Sistema</button>
   </div>
 </div>
 
 <!-- APP -->
-<div id="app">
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sb-logo">
-      <img src="data:image/png;base64,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" style="height:30px" onerror="this.style.display='none'">
-      <div class="sb-brand">Alpiend<br><span>Treinamentos</span></div>
-    </div>
-    <nav class="sb-nav">
+<div id="app" style="display:none;height:100vh;flex-direction:column">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-brand">🏔️ ALPIEND</div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-title" id="topbar-title">🏠 Visão Geral</div>
+    <div class="topbar-user" id="topbar-user"></div>
+    <button class="btn btn-g btn-sm no-print" onclick="doLogout()">Sair</button>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sb-brand">
+        <img src="data:image/png;base64,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" style="width:30px;height:30px;border-radius:7px;object-fit:cover" alt="" onerror="this.style.display='none'">
+        <div><div class="sb-brand-txt">Alpiend</div><div class="sb-brand-sub">Treinamentos</div></div>
+      </div>
+      <div class="nav-section">Principal</div>
       <button class="nav-item on" onclick="showPanel('overview')"><span class="ni">🏠</span>Visão Geral</button>
       <button class="nav-item" onclick="showPanel('alunos')"><span class="ni">👥</span>Alunos</button>
       <button class="nav-item" onclick="showPanel('inscricoes')"><span class="ni">📋</span>Inscrições</button>
       <button class="nav-item" onclick="showPanel('turmas')"><span class="ni">🗓️</span>Turmas</button>
+      <div class="nav-section">Certificação</div>
       <button class="nav-item" onclick="showPanel('certs')"><span class="ni">🏆</span>Certificações</button>
       <button class="nav-item" onclick="showPanel('leads')"><span class="ni">🎯</span>CRM / Leads</button>
+      <div class="nav-section">Gestão</div>
       <button class="nav-item" onclick="showPanel('financeiro')"><span class="ni">💰</span>Financeiro</button>
       <button class="nav-item" onclick="showPanel('kpis')"><span class="ni">📊</span>KPIs & Aprovação</button>
       <button class="nav-item" onclick="showPanel('relatorios')"><span class="ni">📄</span>Relatórios</button>
-    </nav>
-    <div class="sb-footer">
-      <button class="btn btn-g btn-sm" style="width:100%;justify-content:center" onclick="doLogout()">🚪 Sair</button>
     </div>
-  </div>
 
-  <!-- MAIN -->
-  <div class="main">
-    <div class="topbar">
-      <div class="topbar-title" id="topbar-title">Visão Geral</div>
-      <div class="topbar-right">
-        <span id="topbar-user" style="font-size:12px;color:var(--t2)"></span>
-      </div>
-    </div>
-    <div class="content">
+    <!-- MAIN -->
+    <div class="main">
+      <div class="content">
 
-<!-- ═══════════════ OVERVIEW ═══════════════ -->
-<div id="p-overview" class="panel on">
-  <div id="ov-alerts"></div>
-  <div class="stats-grid" id="ov-stats"></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-    <div>
-      <div class="sec-hdr"><div class="sec-title">👥 Alunos Recentes</div></div>
-      <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Cadastro</th><th>Curso</th></tr></thead><tbody id="tb-ov-alunos"></tbody></table></div>
-    </div>
-    <div>
-      <div class="sec-hdr"><div class="sec-title">🗓️ Próximas Turmas</div></div>
-      <div class="tbl-wrap"><table><thead><tr><th>Turma</th><th>Curso</th><th>Início</th><th>Vagas</th></tr></thead><tbody id="tb-ov-turmas"></tbody></table></div>
-    </div>
-  </div>
-</div>
+        <!-- ═══ VISÃO GERAL ═══ -->
+        <div id="p-overview" class="panel on">
+          <div class="sec-hdr">
+            <div class="sec-title">🏠 Visão Geral</div>
+            <div class="ml row gap">
+              <button class="btn btn-g btn-sm" onclick="loadOverview()">↺ Atualizar</button>
+            </div>
+          </div>
+          <div id="ov-alerts"></div>
+          <div class="stats-grid" id="ov-stats"></div>
+          <div class="two-col" style="margin-top:0">
+            <div class="box">
+              <div class="box-title">👥 Alunos Recentes</div>
+              <div class="tbl-wrap">
+                <table><thead><tr><th>Nome</th><th>Cadastro</th><th>Empresa</th></tr></thead>
+                <tbody id="tb-ov-alunos"></tbody></table>
+              </div>
+            </div>
+            <div class="box">
+              <div class="box-title">🗓️ Próximas Turmas</div>
+              <div class="tbl-wrap">
+                <table><thead><tr><th>Turma</th><th>Curso</th><th>Início</th><th>Vagas</th></tr></thead>
+                <tbody id="tb-ov-turmas"></tbody></table>
+              </div>
+            </div>
+          </div>
+        </div>
 
-<!-- ═══════════════ ALUNOS ═══════════════ -->
-<div id="p-alunos" class="panel">
-  <div class="sec-hdr">
-    <div class="sec-title">👥 Alunos</div>
-    <div class="ml row gap">
-      <input class="inp" id="aluno-srch" placeholder="🔍 Buscar nome..." style="width:220px" oninput="loadAlunos(this.value)">
-      <button class="btn btn-p btn-sm" onclick="openAlunoModal()">+ Novo Aluno</button>
-    </div>
-  </div>
-  <div class="tbl-wrap">
-    <table>
-      <thead><tr><th>Nome</th><th>CPF</th><th>WhatsApp</th><th>Empresa</th><th>Cadastro</th><th>Ações</th></tr></thead>
-      <tbody id="tb-alunos"></tbody>
-    </table>
-  </div>
-  <div id="perfil-container"></div>
-</div>
+        <!-- ═══ ALUNOS ═══ -->
+        <div id="p-alunos" class="panel">
+          <div class="sec-hdr">
+            <div class="sec-title">👥 Alunos</div>
+            <div class="ml row gap">
+              <input class="inp" style="width:220px;padding:7px 12px;font-size:12px" placeholder="🔍 Buscar nome..." oninput="loadAlunos(this.value)">
+              <button class="btn btn-p btn-sm" onclick="openAlunoModal()">+ Novo Aluno</button>
+            </div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Aluno</th><th>CPF</th><th>WhatsApp</th><th>Empresa</th><th>Cadastro</th><th>Ações</th></tr></thead>
+              <tbody id="tb-alunos"></tbody>
+            </table>
+          </div>
+          <div id="perfil-container" style="margin-top:20px"></div>
+        </div>
 
-<!-- ═══════════════ INSCRIÇÕES ═══════════════ -->
-<div id="p-inscricoes" class="panel">
-  <div class="sec-hdr">
-    <div class="sec-title">📋 Inscrições</div>
-    <div class="ml row gap">
-      <select class="sel" id="mat-fil-turma" onchange="loadMats()" style="width:180px"><option value="">Todas as turmas</option></select>
-      <select class="sel" id="mat-fil-status" onchange="loadMats()" style="width:160px">
-        <option value="">Todos os status</option>
-        <option>Confirmado</option><option>Aguardando Pagamento</option><option>Documentação Pendente</option><option>Cancelado</option><option>Desistente</option>
-      </select>
-      <button class="btn btn-p btn-sm" onclick="openMatModal()">+ Nova Inscrição</button>
-    </div>
-  </div>
-  <div class="tbl-wrap">
-    <table>
-      <thead><tr><th>Aluno</th><th>Turma / Curso</th><th>Data</th><th>Total</th><th>Status</th><th>NF</th><th>Ações</th></tr></thead>
-      <tbody id="tb-mats"></tbody>
-    </table>
-  </div>
-</div>
+        <!-- ═══ INSCRIÇÕES ═══ -->
+        <div id="p-inscricoes" class="panel">
+          <div class="sec-hdr">
+            <div class="sec-title">📋 Inscrições</div>
+            <div class="ml row gap">
+              <button class="btn btn-p btn-sm" onclick="openMatModal()">+ Nova Inscrição</button>
+            </div>
+          </div>
+          <div class="filters">
+            <select class="sel" id="mat-fil-turma" onchange="loadMats()" style="max-width:220px;padding:7px 12px;font-size:12px">
+              <option value="">Todas as turmas</option>
+            </select>
+            <select class="sel" id="mat-fil-status" onchange="loadMats()" style="max-width:180px;padding:7px 12px;font-size:12px">
+              <option value="">Todos os status</option>
+              <option>Confirmado</option><option>Aguardando Pagamento</option>
+              <option>Documentação Pendente</option><option>Cancelado</option><option>Desistente</option>
+            </select>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Candidato</th><th>Turma</th><th>Data</th><th>Valor Total</th><th>Status</th><th>NF</th><th>Ações</th></tr></thead>
+              <tbody id="tb-mats"></tbody>
+            </table>
+          </div>
+        </div>
 
-<!-- ═══════════════ TURMAS ═══════════════ -->
-<div id="p-turmas" class="panel">
-  <div class="sec-hdr">
-    <div class="sec-title">🗓️ Turmas</div>
-    <div class="ml row gap">
-      <select class="sel" id="turma-fil" onchange="loadTurmas()" style="width:160px">
-        <option value="">Todas</option><option value="Aberta">Abertas</option><option value="Em Andamento">Em Andamento</option><option value="Encerrada">Encerradas</option>
-      </select>
-      <button class="btn btn-p btn-sm" onclick="openTurmaModal()">+ Nova Turma</button>
-    </div>
-  </div>
-  <div class="turma-grid" id="turma-grid"></div>
-</div>
+        <!-- ═══ TURMAS ═══ -->
+        <div id="p-turmas" class="panel">
+          <div class="sec-hdr">
+            <div class="sec-title">🗓️ Turmas</div>
+            <div class="ml row gap">
+              <select class="sel" id="turma-fil" onchange="loadTurmas()" style="padding:7px 12px;font-size:12px;width:auto">
+                <option value="">Todas</option>
+                <option>Aberta</option><option>Em Andamento</option><option>Encerrada</option>
+              </select>
+              <button class="btn btn-p btn-sm" onclick="openTurmaModal()">+ Nova Turma</button>
+            </div>
+          </div>
+          <div class="turma-grid" id="turma-grid"></div>
+        </div>
 
-<!-- ═══════════════ CERTIFICAÇÕES ═══════════════ -->
-<div id="p-certs" class="panel">
-  <div id="cert-alerts"></div>
-  <div class="sec-hdr">
-    <div class="sec-title">🏆 Certificações</div>
-    <div class="ml"><button class="btn btn-p btn-sm" onclick="openCertModal()">+ Nova Certificação</button></div>
-  </div>
-  <div class="tbl-wrap">
-    <table>
-      <thead><tr><th>Aluno</th><th>Tipo / Nível</th><th>Número</th><th>Emissão</th><th>Vencimento</th><th>Nota</th><th>Status</th><th>Ações</th></tr></thead>
-      <tbody id="tb-certs"></tbody>
-    </table>
-  </div>
-</div>
+        <!-- ═══ CERTIFICAÇÕES ═══ -->
+        <div id="p-certs" class="panel">
+          <div class="sec-hdr">
+            <div class="sec-title">🏆 Certificações</div>
+            <div class="ml row gap">
+              <button class="btn btn-p btn-sm" onclick="openCertModal()">+ Nova Certificação</button>
+            </div>
+          </div>
+          <div id="cert-alerts"></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Aluno</th><th>Tipo</th><th>Certificado</th><th>Emissão</th><th>Vencimento</th><th>Nota</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody id="tb-certs"></tbody>
+            </table>
+          </div>
+        </div>
 
-<!-- ═══════════════ LEADS ═══════════════ -->
-<div id="p-leads" class="panel">
-  <div class="sec-hdr">
-    <div class="sec-title">🎯 CRM / Leads</div>
-    <div class="ml"><button class="btn btn-p btn-sm" onclick="openLeadModal()">+ Novo Lead</button></div>
-  </div>
-  <div class="kanban" id="kanban-leads"></div>
-  <div class="tbl-wrap">
-    <table>
-      <thead><tr><th>Nome</th><th>Empresa</th><th>Curso</th><th>Etapa</th><th>Follow-up</th><th>Valor Est.</th><th>Ações</th></tr></thead>
-      <tbody id="tb-leads"></tbody>
-    </table>
-  </div>
-</div>
+        <!-- ═══ LEADS ═══ -->
+        <div id="p-leads" class="panel">
+          <div class="sec-hdr">
+            <div class="sec-title">🎯 CRM / Leads</div>
+            <div class="ml row gap">
+              <button class="btn btn-p btn-sm" onclick="openLeadModal()">+ Novo Lead</button>
+            </div>
+          </div>
+          <div class="kanban" id="kanban-leads"></div>
+          <div style="margin-top:20px">
+            <div class="box-title" style="margin-bottom:12px">Todos os Leads</div>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>Nome</th><th>Empresa</th><th>Curso</th><th>Etapa</th><th>Follow-up</th><th>Valor Est.</th><th>Ações</th></tr></thead>
+                <tbody id="tb-leads"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
-<!-- ═══════════════ FINANCEIRO ═══════════════ -->
-<div id="p-financeiro" class="panel">
-  <div class="fin-tabs">
-    <div class="ftab on" onclick="showFinTab('receitas')">💵 Receitas</div>
-    <div class="ftab" onclick="showFinTab('despesas')">📉 Despesas</div>
-    <div class="ftab" onclick="showFinTab('resultado')">📊 Resultado</div>
-  </div>
-  <!-- Receitas -->
-  <div id="ft-receitas">
-    <div class="stats-grid" id="fin-stats"></div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr><th>Aluno</th><th>Turma</th><th>Data</th><th>Treinamento</th><th>IRATA BR</th><th>IRATA INT</th><th>Total</th><th>Forma Pag.</th><th>Status</th><th>NF</th><th>Ações</th></tr></thead>
-        <tbody id="tb-fin"></tbody>
-      </table>
-    </div>
-  </div>
-  <!-- Despesas -->
-  <div id="ft-despesas" style="display:none">
-    <div class="sec-hdr">
-      <div class="sec-title">📉 Despesas</div>
-      <div class="ml row gap">
-        <span id="desp-total-bdg" style="font-weight:700;color:var(--red)"></span>
-        <button class="btn btn-p btn-sm" onclick="openDespModal()">+ Nova Despesa</button>
-      </div>
-    </div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Responsável</th><th>Turma</th><th>Ações</th></tr></thead>
-        <tbody id="tb-desp"></tbody>
-      </table>
-    </div>
-  </div>
-  <!-- Resultado -->
-  <div id="ft-resultado" style="display:none">
-    <div class="stats-grid" id="res-stats"></div>
-    <div class="tbl-wrap" style="margin-top:16px">
-      <table><thead><tr><th>Categoria Despesa</th><th>Total</th></tr></thead><tbody id="tb-res-cat"></tbody></table>
-    </div>
-  </div>
-</div>
+        <!-- ═══ FINANCEIRO ═══ -->
+        <div id="p-financeiro" class="panel">
+          <div class="sec-hdr">
+            <div class="sec-title">💰 Financeiro</div>
+          </div>
+          <div class="fin-tabs">
+            <div class="ftab on" onclick="showFinTab('receitas')">💵 Receitas</div>
+            <div class="ftab" onclick="showFinTab('despesas')">📉 Despesas</div>
+            <div class="ftab" onclick="showFinTab('resultado')">📊 Resultado</div>
+          </div>
+          <!-- RECEITAS -->
+          <div id="ft-receitas">
+            <div class="stats-grid" id="fin-stats"></div>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>Aluno</th><th>Turma</th><th>Data</th><th>Treinamento</th><th>IRATA BR</th><th>Total</th><th>Pagamento</th><th>Status</th><th>NF</th><th>Ação</th></tr></thead>
+                <tbody id="tb-fin"></tbody>
+              </table>
+            </div>
+          </div>
+          <!-- DESPESAS -->
+          <div id="ft-despesas" style="display:none">
+            <div class="sec-hdr">
+              <div style="font-size:14px;font-weight:600">Total: <span id="desp-total-bdg" style="color:var(--red);font-family:Syne,sans-serif"></span></div>
+              <div class="ml"><button class="btn btn-p btn-sm" onclick="openDespModal()">+ Nova Despesa</button></div>
+            </div>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Responsável</th><th>Turma</th><th>Ações</th></tr></thead>
+                <tbody id="tb-desp"></tbody>
+              </table>
+            </div>
+          </div>
+          <!-- RESULTADO -->
+          <div id="ft-resultado" style="display:none">
+            <div class="stats-grid" id="res-stats"></div>
+            <div class="box" style="margin-top:0">
+              <div class="box-title">📊 Despesas por Categoria</div>
+              <div class="tbl-wrap">
+                <table><thead><tr><th>Categoria</th><th>Total</th></tr></thead>
+                <tbody id="tb-res-cat"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
-<!-- ═══════════════ KPIs ═══════════════ -->
-<div id="p-kpis" class="panel">
-  <div class="stats-grid" id="kpi-stats"></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
-    <div>
-      <div class="sec-title" style="margin-bottom:12px">📊 Por Curso</div>
-      <div class="tbl-wrap"><table><thead><tr><th>Curso</th><th>Total</th><th>Aprovados</th><th>Taxa</th></tr></thead><tbody id="tb-kpi-curso"></tbody></table></div>
-    </div>
-    <div>
-      <div class="sec-title" style="margin-bottom:12px">📅 Por Turma</div>
-      <div class="tbl-wrap"><table><thead><tr><th>Turma</th><th>Total</th><th>Aprovados</th><th>Taxa</th></tr></thead><tbody id="tb-kpi-turma"></tbody></table></div>
-    </div>
-  </div>
-</div>
+        <!-- ═══ KPIs ═══ -->
+        <div id="p-kpis" class="panel">
+          <div class="sec-hdr"><div class="sec-title">📊 KPIs & Aprovação</div></div>
+          <div class="stats-grid" id="kpi-stats"></div>
+          <div class="two-col" style="margin-top:0">
+            <div class="box">
+              <div class="box-title">Taxa de Aprovação por Curso</div>
+              <div class="tbl-wrap">
+                <table><thead><tr><th>Curso</th><th>Total</th><th>Aprovados</th><th>Taxa</th></tr></thead>
+                <tbody id="tb-kpi-curso"></tbody>
+              </table>
+            </div>
+            <div class="box">
+              <div class="box-title">Renovações Próximas</div>
+              <div class="tbl-wrap">
+                <table><thead><tr><th>Aluno</th><th>Tipo</th><th>Vencimento</th><th>Dias</th></tr></thead>
+                <tbody id="tb-kpi-renov"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
-<!-- ═══════════════ RELATÓRIOS ═══════════════ -->
-<div id="p-relatorios" class="panel">
-  <div class="rel-tabs">
-    <div class="rtab on" onclick="showRelTab('contas')">💰 Contas a Receber</div>
-    <div class="rtab" onclick="showRelTab('nfs')">🧾 Notas Fiscais</div>
-    <div class="rtab" onclick="showRelTab('receita')">📈 Receita por Turma</div>
-    <div class="rtab" onclick="showRelTab('aprovacao')">🏆 Aprovação</div>
-    <div class="rtab" onclick="showRelTab('renovacao')">🔄 Renovações</div>
-    <div class="rtab" onclick="showRelTab('despesas-rel')">📉 Despesas</div>
-  </div>
-  <div id="rel-content"></div>
-</div>
+        <!-- ═══ RELATÓRIOS ═══ -->
+        <div id="p-relatorios" class="panel">
+          <div class="sec-hdr">
+            <div class="sec-title">📄 Relatórios</div>
+            <div class="ml"><button class="btn btn-p btn-sm no-print" onclick="imprimirRelatorio()">🖨️ Imprimir</button></div>
+          </div>
+          <div class="rel-tabs">
+            <div class="rtab on" onclick="showRelTab('contas')">💰 Contas a Receber</div>
+            <div class="rtab" onclick="showRelTab('nfs')">🧾 Notas Fiscais</div>
+            <div class="rtab" onclick="showRelTab('receita')">📈 Receita por Turma</div>
+            <div class="rtab" onclick="showRelTab('aprovacao')">🏆 Aprovação</div>
+            <div class="rtab" onclick="showRelTab('renovacao')">🔄 Renovações</div>
+            <div class="rtab" onclick="showRelTab('despesas-rel')">📉 Despesas</div>
+          </div>
+          <div id="rel-content"></div>
+        </div>
 
-    </div><!-- /content -->
-  </div><!-- /main -->
+      </div><!-- /content -->
+    </div><!-- /main -->
+  </div><!-- /layout -->
 </div><!-- /app -->
 
 <!-- ═══ MODAL ALUNO ═══ -->
@@ -394,7 +568,6 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
         <button class="ctab-btn on" id="ctb-dados" onclick="sCTab('dados')">👤 Dados</button>
         <button class="ctab-btn" id="ctb-extra" onclick="sCTab('extra')">📝 Endereço & Extra</button>
       </div>
-      <!-- TAB DADOS -->
       <div id="ctc-dados">
         <div class="fg">
           <div class="fi full"><label class="fl">Nome Completo *</label><input class="inp" id="a-nome" placeholder="Nome completo"></div>
@@ -402,21 +575,20 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
           <div class="fi"><label class="fl">Data de Nascimento</label><input class="inp" type="date" id="a-nasc"></div>
           <div class="fi"><label class="fl">E-mail</label><input class="inp" id="a-email" placeholder="email@exemplo.com" type="email"></div>
           <div class="fi"><label class="fl">WhatsApp</label><input class="inp" id="a-wpp" placeholder="55119..."></div>
-          <div class="fi"><label class="fl">Tipo</label>
-            <div style="display:flex;gap:16px;align-items:center;padding:8px 0">
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="a-tp" id="a-pf" value="PF" checked onchange="togglePJ()"> PF</label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="a-tp" id="a-pj" value="PJ" onchange="togglePJ()"> PJ</label>
+          <div class="fi"><label class="fl">Tipo de Pessoa</label>
+            <div style="display:flex;gap:20px;align-items:center;padding:10px 0">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="radio" name="a-tp" id="a-pf" value="PF" checked onchange="togglePJ()"> Pessoa Física</label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="radio" name="a-tp" id="a-pj" value="PJ" onchange="togglePJ()"> Pessoa Jurídica</label>
             </div>
           </div>
           <div id="pj-f" style="display:none;grid-column:1/-1">
             <div class="fg">
-              <div class="fi"><label class="fl">Empresa</label><input class="inp" id="a-emp" placeholder="Razão social"></div>
+              <div class="fi"><label class="fl">Empresa / Razão Social</label><input class="inp" id="a-emp" placeholder="Razão social"></div>
               <div class="fi"><label class="fl">CNPJ</label><input class="inp" id="a-cnpj" placeholder="00.000.000/0000-00" maxlength="18"></div>
             </div>
           </div>
         </div>
       </div>
-      <!-- TAB EXTRA -->
       <div id="ctc-extra" style="display:none">
         <div class="fg">
           <div class="fi"><label class="fl">CEP</label>
@@ -436,8 +608,8 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
             </select>
           </div>
           <div class="fi full"><label class="fl">Observações</label><textarea class="inp" id="a-obs" placeholder="Observações sobre o aluno"></textarea></div>
-          <div class="fi"><label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-            <input type="checkbox" id="a-bv"> <span class="fl">Enviar WhatsApp de boas-vindas</span>
+          <div class="fi"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="a-bv"> Enviar boas-vindas pelo WhatsApp
           </label></div>
         </div>
       </div>
@@ -451,7 +623,7 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
 
 <!-- ═══ MODAL MATRÍCULA ═══ -->
 <div class="ov" id="m-mat">
-  <div class="modal" style="max-width:600px">
+  <div class="modal" style="max-width:620px">
     <div class="modal-head">
       <span class="modal-title" id="m-mat-t">📋 Nova Inscrição</span>
       <button class="btn btn-g btn-xs" onclick="closeModal('m-mat')">✕</button>
@@ -468,13 +640,12 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
         <div class="fi"><label class="fl">E-mail</label><input class="inp" id="m-email" placeholder="email@exemplo.com"></div>
         <div class="fi"><label class="fl">Empresa</label><input class="inp" id="m-emp" placeholder="Empresa"></div>
       </div>
-      <hr>
       <div class="sec-sub">🗓️ Turma</div>
       <div class="fg">
         <div class="fi"><label class="fl">Turma</label>
           <select class="sel" id="m-turma-sel" onchange="onTurmaSel()"><option value="">— selecione —</option></select>
         </div>
-        <div class="fi"><label class="fl">Curso</label><input class="inp" id="m-curso" placeholder="Autopreenchido" readonly style="opacity:.6"></div>
+        <div class="fi"><label class="fl">Curso</label><input class="inp" id="m-curso" placeholder="Autopreenchido" readonly style="opacity:.5"></div>
         <div class="fi"><label class="fl">Data da Matrícula</label><input class="inp" type="date" id="m-data"></div>
         <div class="fi"><label class="fl">Status</label>
           <select class="sel" id="m-status">
@@ -482,19 +653,17 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
           </select>
         </div>
       </div>
-      <hr>
       <div class="sec-sub">💰 Valores</div>
       <div class="fg">
         <div class="fi"><label class="fl">Valor Treinamento (R$)</label><input class="inp" type="number" id="m-val" step="0.01" placeholder="0,00" min="0"></div>
         <div class="fi"><label class="fl">Taxa IRATA Brasil (R$)</label><input class="inp" type="number" id="m-irata" step="0.01" placeholder="0,00" min="0"></div>
-        <div class="fi"><label class="fl">IRATA Internacional (R$)</label><input class="inp" type="number" id="m-irata-int" step="0.01" placeholder="0,00" min="0"></div>
+        <div class="fi"><label class="fl">IRATA Internacional (R$) *</label><input class="inp" type="number" id="m-irata-int" step="0.01" placeholder="0,00 (requer SQL)" min="0"></div>
         <div class="fi"><label class="fl">Forma de Pagamento</label>
           <select class="sel" id="m-forma-pag">
             <option>PIX</option><option>Transferência</option><option>Boleto</option><option>Cartão</option><option>Dinheiro</option><option>A combinar</option>
           </select>
         </div>
       </div>
-      <hr>
       <div class="sec-sub">🧾 Nota Fiscal</div>
       <div class="fg">
         <div class="fi"><label class="fl">Número NF</label><input class="inp" id="m-nf-num" placeholder="00001"></div>
@@ -514,14 +683,14 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
 
 <!-- ═══ MODAL TURMA ═══ -->
 <div class="ov" id="m-turma">
-  <div class="modal" style="max-width:500px">
+  <div class="modal" style="max-width:520px">
     <div class="modal-head">
       <span class="modal-title" id="m-turma-t">🗓️ Nova Turma</span>
       <button class="btn btn-g btn-xs" onclick="closeModal('m-turma')">✕</button>
     </div>
     <div class="modal-body">
       <div class="fg">
-        <div class="fi full"><label class="fl">Nome da Turma *</label><input class="inp" id="t-nome" placeholder="Ex: IRATA N1 — Turma 01/2025"></div>
+        <div class="fi full"><label class="fl">Nome da Turma *</label><input class="inp" id="t-nome" placeholder="Ex: IRATA N1 — Turma 010/2025"></div>
         <div class="fi full"><label class="fl">Curso *</label>
           <select class="sel" id="t-curso">
             <option>Acesso por Cordas — IRATA N1</option>
@@ -533,11 +702,13 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
         <div class="fi"><label class="fl">Data de Início</label><input class="inp" type="date" id="t-ini"></div>
         <div class="fi"><label class="fl">Data de Término</label><input class="inp" type="date" id="t-fim"></div>
         <div class="fi"><label class="fl">Horário</label><input class="inp" id="t-horario" placeholder="08:00 - 17:00"></div>
-        <div class="fi"><label class="fl">Local</label><input class="inp" id="t-local" placeholder="Endereço ou nome do local"></div>
+        <div class="fi"><label class="fl">Local</label><input class="inp" id="t-local" placeholder="Endereço ou local"></div>
         <div class="fi"><label class="fl">Vagas</label><input class="inp" type="number" id="t-vagas" placeholder="10" min="1"></div>
         <div class="fi"><label class="fl">Status</label>
           <select class="sel" id="t-status">
-            <option>Aberta</option><option>Em Andamento</option><option>Encerrada</option>
+            <option value="Aberta">Aberta</option>
+            <option value="Em Andamento">Em Andamento</option>
+            <option value="Encerrada">Encerrada</option>
           </select>
         </div>
         <div class="fi full"><label class="fl">Instrutor</label><input class="inp" id="t-instrutor" placeholder="Nome do instrutor"></div>
@@ -553,7 +724,7 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
 
 <!-- ═══ MODAL CERT ═══ -->
 <div class="ov" id="m-cert">
-  <div class="modal" style="max-width:500px">
+  <div class="modal" style="max-width:520px">
     <div class="modal-head">
       <span class="modal-title" id="m-cert-t">🏆 Nova Certificação</span>
       <button class="btn btn-g btn-xs" onclick="closeModal('m-cert')">✕</button>
@@ -565,22 +736,17 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
         </div>
         <div class="fi"><label class="fl">Tipo de Curso</label>
           <select class="sel" id="c-tipo">
-            <option>IRATA N1</option><option>IRATA N2</option><option>IRATA N3</option><option>Resgate Técnico</option>
+            <option value="IRATA N1">IRATA N1</option><option value="IRATA N2">IRATA N2</option>
+            <option value="IRATA N3">IRATA N3</option><option value="Resgate Técnico">Resgate Técnico</option>
           </select>
         </div>
         <div class="fi"><label class="fl">Número do Certificado</label><input class="inp" id="c-num" placeholder="ALP-2025-001"></div>
         <div class="fi"><label class="fl">Data de Emissão</label><input class="inp" type="date" id="c-emissao"></div>
-        <div class="fi"><label class="fl">Data de Aprovação</label><input class="inp" type="date" id="c-aprov"></div>
         <div class="fi"><label class="fl">Data de Vencimento</label><input class="inp" type="date" id="c-venc"></div>
-        <div class="fi"><label class="fl">Nota (0–10)</label><input class="inp" type="number" id="c-nota" step="0.1" min="0" max="10" placeholder="0.0"></div>
-        <div class="fi"><label class="fl">Resultado Avaliação</label>
-          <select class="sel" id="c-resultado">
-            <option value="">—</option><option>Aprovado</option><option>Reprovado</option><option>Parcial</option>
-          </select>
-        </div>
+        <div class="fi"><label class="fl">Nota de Aprovação (0–10)</label><input class="inp" type="number" id="c-nota" step="0.1" min="0" max="10" placeholder="0.0"></div>
         <div class="fi"><label class="fl">Status</label>
           <select class="sel" id="c-status">
-            <option>Válido</option><option>Vencido</option><option>Suspenso</option>
+            <option value="Válido">Válido</option><option value="Vencido">Vencido</option><option value="Suspenso">Suspenso</option>
           </select>
         </div>
         <div class="fi full"><label class="fl">Observações</label><textarea class="inp" id="c-obs" placeholder="Observações"></textarea></div>
@@ -663,7 +829,7 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
 
 <!-- ═══ MODAL PAGAMENTO ═══ -->
 <div class="ov" id="m-pagto">
-  <div class="modal" style="max-width:440px">
+  <div class="modal" style="max-width:420px">
     <div class="modal-head">
       <span class="modal-title">💰 Editar Pagamento</span>
       <button class="btn btn-g btn-xs" onclick="closeModal('m-pagto')">✕</button>
@@ -672,13 +838,12 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
       <div class="fg">
         <div class="fi"><label class="fl">Valor Treinamento (R$)</label><input class="inp" type="number" id="pg-val" step="0.01" min="0"></div>
         <div class="fi"><label class="fl">Taxa IRATA Brasil (R$)</label><input class="inp" type="number" id="pg-irata" step="0.01" min="0"></div>
-        <div class="fi full"><label class="fl">IRATA Internacional (R$)</label><input class="inp" type="number" id="pg-irata-int" step="0.01" min="0"></div>
         <div class="fi"><label class="fl">Forma de Pagamento</label>
           <select class="sel" id="pg-forma">
             <option>PIX</option><option>Transferência</option><option>Boleto</option><option>Cartão</option><option>Dinheiro</option>
           </select>
         </div>
-        <div class="fi full"><label class="fl">Status</label>
+        <div class="fi"><label class="fl">Status</label>
           <select class="sel" id="pg-status">
             <option>Confirmado</option><option>Aguardando Pagamento</option><option>Documentação Pendente</option><option>Cancelado</option><option>Desistente</option>
           </select>
@@ -692,11 +857,11 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
   </div>
 </div>
 
-<!-- ═══ MODAL CONFIRMAR ═══ -->
+<!-- ═══ CONFIRMAR ═══ -->
 <div class="ov" id="m-confirm">
   <div class="modal" style="max-width:380px">
     <div class="modal-head"><span class="modal-title" id="confirm-t">Confirmar</span></div>
-    <div class="modal-body"><p id="confirm-msg" style="font-size:14px;color:var(--t2)"></p></div>
+    <div class="modal-body"><p id="confirm-msg" style="font-size:14px;color:var(--t2);line-height:1.6"></p></div>
     <div class="modal-foot">
       <button class="btn btn-g" onclick="closeModal('m-confirm')">Cancelar</button>
       <button class="btn btn-d" id="confirm-ok">Confirmar</button>
@@ -704,10 +869,13 @@ hr{border:none;border-top:1px solid var(--brd);margin:14px 0}
   </div>
 </div>
 
+<!-- PRINT AREA -->
+<div id="print-area"></div>
 <!-- TOAST -->
 <div id="toast-wrap"></div>
 
 <script>
+
 
 // ── CONFIG ─────────────────────────────────────────────────────────
 const SB_URL='https://lpnoqxvtuinoswfnnzpf.supabase.co',SB_KEY='sb_publishable_FwmG9cNTKInaPYgjfSW1-Q_PMsFRkzx',WPP='5511999999999';
@@ -1147,11 +1315,28 @@ async function editTurma(id){
   if($('m-turma-t'))$('m-turma-t').textContent='✏️ Editar Turma';
   if($('t-save-btn'))$('t-save-btn').textContent='💾 Atualizar';
   openModal('m-turma');
-  setTimeout(function(){
-    function fSel(selId,val){const s=$(selId);if(!s||!val)return;for(let i=0;i<s.options.length;i++){if(s.options[i].value===val||s.options[i].text===val){s.selectedIndex=i;break;}}}
-    fSel('t-curso',data.curso||'');
-    fSel('t-status',data.status||'Aberta');
-  },50);
+  // Setar selects imediatamente (sem race condition)
+  // Set selects directly — more reliable than fSel
+  const tCursoSel=$('t-curso');
+  if(tCursoSel&&data.curso){
+    tCursoSel.value=data.curso;
+    if(!tCursoSel.value){
+      for(let i=0;i<tCursoSel.options.length;i++){
+        if(tCursoSel.options[i].text.trim()===data.curso.trim()){tCursoSel.selectedIndex=i;break;}
+      }
+    }
+  }
+  const tStatusSel=$('t-status');
+  if(tStatusSel&&data.status){
+    tStatusSel.value=data.status;
+    if(!tStatusSel.value){
+      for(let i=0;i<tStatusSel.options.length;i++){
+        if(tStatusSel.options[i].text.trim()===data.status.trim()||tStatusSel.options[i].value===data.status){
+          tStatusSel.selectedIndex=i;break;
+        }
+      }
+    }
+  }
 }
 
 async function saveTurma(){
@@ -1403,25 +1588,45 @@ async function editCert(id){
   if($('c-venc'))$('c-venc').value=data.data_vencimento||'';
   if($('c-nota'))$('c-nota').value=data.nota_aprovacao!=null?data.nota_aprovacao:'';
   if($('c-obs'))$('c-obs').value=data.observacoes||'';
-  if($('m-cert-t'))$('m-cert-t').textContent='✏️ Editar Certificação';
+  if($('m-cert-t'))$('m-cert-t').textContent='✏️ Editar Certificação — '+((data.alunos&&data.alunos.nome)||'');
   if($('c-save-btn'))$('c-save-btn').textContent='💾 Atualizar';
   openModal('m-cert');
   setTimeout(function(){
     function fSel(selId,val){const s=$(selId);if(!s)return;s.value=val||'';}
     fSel('c-aluno',data.aluno_id||'');
     fSel('c-tipo',data.tipo_curso||'');
-    fSel('c-resultado',data.resultado_avaliacao||'');
     fSel('c-status',data.status||'Válido');
   },50);
 }
 
 async function saveCert(){
   const btn=$('c-save-btn');if(btn){btn.disabled=true;btn.textContent='Salvando...';}
-  const p={aluno_id:nn($('c-aluno')?.value),tipo_curso:nn($('c-tipo')?.value),numero_certificado:nn($('c-num')?.value),data_emissao:nn($('c-emissao')?.value),data_aprovacao:nn($('c-aprov')?.value),data_vencimento:nn($('c-venc')?.value),nota_aprovacao:pv($('c-nota')?.value),resultado_avaliacao:nn($('c-resultado')?.value),status:nn($('c-status')?.value)||'Válido',observacoes:nn($('c-obs')?.value)};
-  if(!p.aluno_id){if(btn){btn.disabled=false;btn.textContent=editCertId?'💾 Atualizar':'✅ Salvar';}toast('⚠️','Selecione o aluno!','err');return;}
-  const res=editCertId?await sb.from('certificacoes').update(p).eq('id',editCertId):await sb.from('certificacoes').insert([p]);
+  if(!nn($('c-aluno')?.value)){if(btn){btn.disabled=false;btn.textContent=editCertId?'💾 Atualizar':'✅ Salvar';}toast('⚠️','Selecione o aluno!','err');return;}
+  // Payload seguro — sem colunas opcionais que podem não existir
+  const p={
+    aluno_id:nn($('c-aluno')?.value),
+    tipo_curso:nn($('c-tipo')?.value),
+    numero_certificado:nn($('c-num')?.value),
+    data_emissao:nn($('c-emissao')?.value),
+    data_vencimento:nn($('c-venc')?.value),
+    nota_aprovacao:pv($('c-nota')?.value),
+    status:nn($('c-status')?.value)||'Válido',
+    observacoes:nn($('c-obs')?.value)
+  };
+  let res=editCertId?await sb.from('certificacoes').update(p).eq('id',editCertId):await sb.from('certificacoes').insert([p]);
+  // Se erro de coluna inexistente, tenta sem as colunas opcionais
+  if(res.error&&(res.error.message.includes('column')||res.error.message.includes('schema'))){
+    console.warn('saveCert: retrying without optional columns',res.error.message);
+    const pSafe={aluno_id:p.aluno_id,tipo_curso:p.tipo_curso,numero_certificado:p.numero_certificado,data_emissao:p.data_emissao,data_vencimento:p.data_vencimento,nota_aprovacao:p.nota_aprovacao,status:p.status,observacoes:p.observacoes};
+    res=editCertId?await sb.from('certificacoes').update(pSafe).eq('id',editCertId):await sb.from('certificacoes').insert([pSafe]);
+  }
   if(btn){btn.disabled=false;btn.textContent=editCertId?'💾 Atualizar':'✅ Salvar';}
-  if(res.error){console.error('saveCert',res.error);toast('❌',res.error.message,'err');return;}
+  if(res.error){
+    console.error('saveCert',res.error);
+    let msg=res.error.message||'Erro desconhecido';
+    if(msg.includes('column')||msg.includes('schema'))msg='Coluna não encontrada. Execute o SQL de migração no Supabase.';
+    toast('❌',msg,'err');return;
+  }
   closeModal('m-cert');toast('✅',editCertId?'Certificação atualizada!':'Certificação salva!');
   editCertId=null;loadCerts();
 }
@@ -1758,6 +1963,18 @@ async function loadKPIs(){
   certs.forEach(function(c){const k=c.tipo_curso||'Outro';if(!byCurso[k])byCurso[k]={total:0,apr:0};byCurso[k].total++;if(c.nota_aprovacao!=null&&parseFloat(c.nota_aprovacao)>=8.6)byCurso[k].apr++;});
   const t1=$('tb-kpi-curso');
   if(t1)t1.innerHTML=Object.entries(byCurso).map(function(e){const d=e[1];return'<tr><td>'+esc(e[0])+'</td><td>'+d.total+'</td><td style="color:var(--grn)">'+d.apr+'</td><td style="font-weight:700">'+(d.total>0?Math.round(d.apr/d.total*100)+'%':'—')+'</td></tr>';}).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--t2)">Sem dados</td></tr>';
+  // Renovações
+  const r3=await sb.from('certificacoes').select('*,alunos(nome)').order('data_vencimento',{ascending:true}).limit(10);
+  const renovs=(r3.data||[]).filter(function(c){if(!c.data_vencimento)return false;const v=new Date(c.data_vencimento);const n=new Date();const i90=new Date();i90.setDate(n.getDate()+90);return v<=i90;});
+  const t2=$('tb-kpi-renov');
+  if(t2){
+    const now=new Date();
+    t2.innerHTML=renovs.length?renovs.map(function(c){
+      const v=new Date(c.data_vencimento);const dias=Math.ceil((v-now)/(1000*60*60*24));
+      const cls=dias<0?'br':dias<=30?'br':'bo';
+      return'<tr><td><strong>'+esc((c.alunos&&c.alunos.nome)||'—')+'</strong></td><td style="font-size:11px">'+esc(c.tipo_curso||'—')+'</td><td style="font-size:11px">'+fmtD(c.data_vencimento)+'</td><td><span class="chip '+cls+'">'+(dias<0?Math.abs(dias)+'d atrás':dias+'d')+'</span></td></tr>';
+    }).join(''):'<tr><td colspan="4"><div class="empty" style="padding:16px">✅ Sem renovações pendentes</div></td></tr>';
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -1909,6 +2126,75 @@ async function loadOverview(){
 }
 
 // ══════════════════════════════════════════════
+// IMPRESSÃO
+// ══════════════════════════════════════════════
+function imprimirRelatorio(){
+  const content=$('rel-content');
+  if(!content||!content.innerHTML.trim()){
+    toast('⚠️','Nenhum relatório carregado para imprimir.','err');return;
+  }
+  // Descobrir qual aba está ativa
+  let titulo='Relatório';
+  document.querySelectorAll('.rtab').forEach(function(b){
+    if(b.classList.contains('on'))titulo=b.textContent.trim();
+  });
+  const now=new Date();
+  const dataHora=now.toLocaleDateString('pt-BR')+' '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  // Extrair tabela e sumário do rel-content
+  // Clonar para não mexer no original
+  const clone=content.cloneNode(true);
+  // Remover botões de ação dentro do clone
+  clone.querySelectorAll('button').forEach(function(b){b.remove();});
+  // Calcular totais se houver tabela
+  let summaryHTML='';
+  const tbl=clone.querySelector('table');
+  if(tbl){
+    // Tentar identificar colunas de valor (R$)
+    const headers=Array.from(tbl.querySelectorAll('thead th')).map(function(th){return th.textContent.trim();});
+    const rows=Array.from(tbl.querySelectorAll('tbody tr'));
+    const totalCols=[];
+    headers.forEach(function(h,i){
+      if(/total|valor|treinamento|irata|receita/i.test(h))totalCols.push({idx:i,label:h});
+    });
+    if(totalCols.length){
+      const sums={};
+      totalCols.forEach(function(col){sums[col.idx]=0;});
+      rows.forEach(function(row){
+        totalCols.forEach(function(col){
+          const cell=row.cells[col.idx];
+          if(cell){
+            const txt=cell.textContent.replace(/[R$\s.]/g,'').replace(',','.');
+            const n=parseFloat(txt);
+            if(!isNaN(n))sums[col.idx]+=n;
+          }
+        });
+      });
+      summaryHTML='<div class="print-summary">';
+      summaryHTML+='<div class="print-sum-card"><div class="print-sum-label">Total de Registros</div><div class="print-sum-val">'+rows.length+'</div></div>';
+      totalCols.forEach(function(col){
+        if(sums[col.idx]>0){
+          summaryHTML+='<div class="print-sum-card"><div class="print-sum-label">'+col.label+'</div><div class="print-sum-val">'+fmt(sums[col.idx])+'</div></div>';
+        }
+      });
+      summaryHTML+='</div>';
+    }
+  }
+  const pa=$('print-area');
+  pa.innerHTML=
+    '<div class="print-header">'+
+      '<div class="print-logo">🏔️ ALPIEND TREINAMENTOS</div>'+
+      '<div class="print-meta"><div style="font-size:13px;font-weight:600">'+titulo+'</div><div>Emitido em: '+dataHora+'</div></div>'+
+    '</div>'+
+    summaryHTML+
+    clone.innerHTML+
+    '<div class="print-footer">'+
+      '<span>Alpiend Treinamentos — Sistema de Gestão</span>'+
+      '<span>'+dataHora+'</span>'+
+    '</div>';
+  window.print();
+}
+
+// ══════════════════════════════════════════════
 // INIT & BOOT
 // ══════════════════════════════════════════════
 async function initApp(){
@@ -1924,6 +2210,7 @@ async function initApp(){
     setupMasks();initApp();
   }
 })();
+
 
 </script>
 </body>
