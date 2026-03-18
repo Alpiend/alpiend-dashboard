@@ -7,6 +7,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -284,6 +293,25 @@ textarea.inp{min-height:80px;resize:vertical;line-height:1.5}
   .no-print{display:none!important}
   @page{margin:1.5cm;size:A4}
 }
+
+/* SweetAlert2 dark theme override */
+.swal-alpiend { border: 1px solid #253450 !important; }
+.swal2-popup { font-family: 'DM Sans', sans-serif !important; }
+.swal2-title { font-family: 'Syne', sans-serif !important; }
+
+/* FullCalendar dark theme */
+.fc { --fc-border-color: #1e2d42; --fc-button-bg-color: #1a2235;
+  --fc-button-border-color: #253450; --fc-button-hover-bg-color: #253450;
+  --fc-button-active-bg-color: #f59e0b; --fc-button-active-border-color: #f59e0b;
+  --fc-today-bg-color: rgba(245,158,11,.08); --fc-event-border-color: transparent;
+  --fc-page-bg-color: transparent; --fc-neutral-bg-color: #0b0f1a;
+  color: #f0f4ff; }
+.fc-toolbar-title { font-family: 'Syne', sans-serif !important; font-size: 16px !important; }
+.fc-col-header-cell { background: #0b0f1a !important; }
+.fc-daygrid-day { background: transparent !important; }
+.fc-daygrid-day:hover { background: rgba(255,255,255,.02) !important; }
+.fc-button { font-family: 'DM Sans', sans-serif !important; font-size: 12px !important; border-radius: 6px !important; }
+.fc-list-event:hover td { background: rgba(245,158,11,.06) !important; }
 </style>
 </head>
 <body>
@@ -336,6 +364,7 @@ textarea.inp{min-height:80px;resize:vertical;line-height:1.5}
       <button class="nav-item" onclick="showPanel('financeiro')"><span class="ni">💰</span>Financeiro</button>
       <button class="nav-item" onclick="showPanel('kpis')"><span class="ni">📊</span>KPIs & Aprovação</button>
       <button class="nav-item" onclick="showPanel('relatorios')"><span class="ni">📄</span>Relatórios</button>
+      <button class="nav-item" onclick="showPanel('calendario')"><span class="ni">📅</span>Calendário</button>
     </div>
 
     <!-- MAIN -->
@@ -352,6 +381,27 @@ textarea.inp{min-height:80px;resize:vertical;line-height:1.5}
           </div>
           <div id="ov-alerts"></div>
           <div class="stats-grid" id="ov-stats"></div>
+          <!-- CHARTS ROW -->
+          <div class="two-col" style="margin-bottom:20px">
+            <div class="box">
+              <div class="box-title">💵 Receita Mensal</div>
+              <canvas id="chart-receita" height="200"></canvas>
+            </div>
+            <div class="box">
+              <div class="box-title">📊 Status das Inscrições</div>
+              <canvas id="chart-status" height="200"></canvas>
+            </div>
+          </div>
+          <div class="two-col" style="margin-bottom:20px">
+            <div class="box">
+              <div class="box-title">🏆 Aprovação por Curso</div>
+              <div id="apex-aprovacao" style="min-height:200px"></div>
+            </div>
+            <div class="box">
+              <div class="box-title">📉 Despesas por Categoria</div>
+              <div id="apex-despesas" style="min-height:200px"></div>
+            </div>
+          </div>
           <div class="two-col" style="margin-top:0">
             <div class="box">
               <div class="box-title">👥 Alunos Recentes</div>
@@ -538,7 +588,11 @@ textarea.inp{min-height:80px;resize:vertical;line-height:1.5}
         <div id="p-relatorios" class="panel">
           <div class="sec-hdr">
             <div class="sec-title">📄 Relatórios</div>
-            <div class="ml"><button class="btn btn-p btn-sm no-print" onclick="imprimirRelatorio()">🖨️ Imprimir</button></div>
+            <div class="ml row gap">
+              <button class="btn btn-g btn-sm no-print" onclick="exportarExcel()">📊 Excel</button>
+              <button class="btn btn-g btn-sm no-print" onclick="exportarPDF()">📄 PDF</button>
+              <button class="btn btn-p btn-sm no-print" onclick="imprimirRelatorio()">🖨️ Imprimir</button>
+            </div>
           </div>
           <div class="rel-tabs">
             <div class="rtab on" onclick="showRelTab('contas')">💰 Contas a Receber</div>
@@ -549,6 +603,19 @@ textarea.inp{min-height:80px;resize:vertical;line-height:1.5}
             <div class="rtab" onclick="showRelTab('despesas-rel')">📉 Despesas</div>
           </div>
           <div id="rel-content"></div>
+        </div>
+
+        <!-- ═══ CALENDÁRIO ═══ -->
+        <div id="p-calendario" class="panel">
+          <div class="sec-hdr">
+            <div class="sec-title">📅 Calendário de Turmas</div>
+            <div class="ml row gap">
+              <button class="btn btn-g btn-sm" onclick="loadCalendario()">↺ Atualizar</button>
+            </div>
+          </div>
+          <div class="box" style="padding:16px">
+            <div id="alpiend-calendar" style="min-height:500px"></div>
+          </div>
         </div>
 
       </div><!-- /content -->
@@ -947,7 +1014,393 @@ function doLogout(){sessionStorage.removeItem('alpiend_sess');location.reload();
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&$('login-screen')?.style.display!=='none')doLogin();});
 
 // ── NAVIGATION ──────────────────────────────────────────────────────
-const PANEL_TITLES={overview:'🏠 Visão Geral',alunos:'👥 Alunos',inscricoes:'📋 Inscrições',turmas:'🗓️ Turmas',certs:'🏆 Certificações',leads:'🎯 CRM / Leads',financeiro:'💰 Financeiro',kpis:'📊 KPIs & Aprovação',relatorios:'📄 Relatórios'};
+const PANEL_TITLES={overview:'🏠 Visão Geral',alunos:'👥 Alunos',inscricoes:'📋 Inscrições',turmas:'🗓️ Turmas',certs:'🏆 Certificações',leads:'🎯 CRM / Leads',financeiro:'💰 Financeiro',kpis:'📊 KPIs & Aprovação',relatorios:'📄 Relatórios',calendario:'📅 Calendário de Turmas'};
+
+// ══════════════════════════════════════════════
+// SWEETALERT2 — substituir confirmar() nativo
+// ══════════════════════════════════════════════
+function confirmar(title, msg, cb) {
+  if (typeof Swal === 'undefined') {
+    if (confirm(title + '\n' + msg)) cb();
+    return;
+  }
+  Swal.fire({
+    title: title,
+    text: msg,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#f59e0b',
+    cancelButtonColor: '#374151',
+    confirmButtonText: 'Confirmar',
+    cancelButtonText: 'Cancelar',
+    background: '#111827',
+    color: '#f0f4ff',
+    customClass: { popup: 'swal-alpiend' }
+  }).then(r => { if (r.isConfirmed) cb(); });
+}
+
+function swalSucesso(msg) {
+  if (typeof Swal === 'undefined') { toast('✅', msg); return; }
+  Swal.fire({
+    title: 'Sucesso!', text: msg, icon: 'success',
+    timer: 2000, showConfirmButton: false,
+    background: '#111827', color: '#f0f4ff'
+  });
+}
+
+// ══════════════════════════════════════════════
+// CHART.JS — Gráficos na Visão Geral
+// ══════════════════════════════════════════════
+let _chartReceita = null;
+let _chartStatus = null;
+
+async function renderCharts() {
+  if (typeof Chart === 'undefined') return;
+
+  // ── Receita Mensal ──
+  const { data: mats } = await sb.from('matriculas')
+    .select('data_matricula,valor_pago,valor_certificacao,status')
+    .eq('status', 'Confirmado');
+
+  // Group by month (last 6 months)
+  const months = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({
+      key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
+      label: d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      val: 0
+    });
+  }
+  (mats || []).forEach(m => {
+    if (!m.data_matricula) return;
+    const mk = m.data_matricula.slice(0, 7);
+    const mo = months.find(x => x.key === mk);
+    if (mo) mo.val += (m.valor_pago || 0) + (m.valor_certificacao || 0);
+  });
+
+  const ctxR = document.getElementById('chart-receita');
+  if (ctxR) {
+    if (_chartReceita) _chartReceita.destroy();
+    _chartReceita = new Chart(ctxR, {
+      type: 'bar',
+      data: {
+        labels: months.map(m => m.label),
+        datasets: [{
+          label: 'Receita (R$)',
+          data: months.map(m => m.val),
+          backgroundColor: 'rgba(245,158,11,0.7)',
+          borderColor: '#f59e0b',
+          borderWidth: 2,
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => 'R$ ' + ctx.raw.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#7a8fa8' } },
+          y: {
+            grid: { color: 'rgba(255,255,255,.05)' },
+            ticks: {
+              color: '#7a8fa8',
+              callback: v => 'R$' + (v / 1000).toFixed(0) + 'k'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Status das Inscrições ──
+  const { data: allMats } = await sb.from('matriculas').select('status');
+  const statusCount = {};
+  (allMats || []).forEach(m => {
+    statusCount[m.status] = (statusCount[m.status] || 0) + 1;
+  });
+  const statusColors = {
+    'Confirmado': '#10b981',
+    'Aguardando Pagamento': '#f97316',
+    'Documentação Pendente': '#06b6d4',
+    'Cancelado': '#f43f5e',
+    'Desistente': '#6b7280'
+  };
+  const ctxS = document.getElementById('chart-status');
+  if (ctxS) {
+    if (_chartStatus) _chartStatus.destroy();
+    const labels = Object.keys(statusCount);
+    _chartStatus = new Chart(ctxS, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data: labels.map(l => statusCount[l]),
+          backgroundColor: labels.map(l => statusColors[l] || '#374151'),
+          borderColor: '#111827',
+          borderWidth: 3,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { color: '#7a8fa8', font: { size: 11 }, padding: 12 }
+          }
+        }
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════════
+// APEXCHARTS — Gráficos avançados
+// ══════════════════════════════════════════════
+let _apexAprov = null;
+let _apexDesp = null;
+
+async function renderApexCharts() {
+  if (typeof ApexCharts === 'undefined') return;
+
+  const APEX_OPTS = {
+    chart: { background: 'transparent', toolbar: { show: false }, animations: { enabled: true, speed: 600 } },
+    theme: { mode: 'dark' },
+    grid: { borderColor: 'rgba(255,255,255,.06)' },
+    tooltip: { theme: 'dark' }
+  };
+
+  // ── Aprovação por Curso ──
+  const { data: certs } = await sb.from('certificacoes').select('tipo_curso,nota_aprovacao');
+  const byCurso = {};
+  (certs || []).forEach(c => {
+    const k = c.tipo_curso || 'Outro';
+    if (!byCurso[k]) byCurso[k] = { total: 0, apr: 0 };
+    byCurso[k].total++;
+    if (c.nota_aprovacao != null && parseFloat(c.nota_aprovacao) >= 8.6) byCurso[k].apr++;
+  });
+  const cursoLabels = Object.keys(byCurso);
+  const apvEl = document.getElementById('apex-aprovacao');
+  if (apvEl && cursoLabels.length) {
+    if (_apexAprov) { _apexAprov.destroy(); _apexAprov = null; }
+    _apexAprov = new ApexCharts(apvEl, {
+      ...APEX_OPTS,
+      chart: { ...APEX_OPTS.chart, type: 'bar', height: 200 },
+      series: [
+        { name: 'Total', data: cursoLabels.map(k => byCurso[k].total) },
+        { name: 'Aprovados', data: cursoLabels.map(k => byCurso[k].apr) }
+      ],
+      xaxis: { categories: cursoLabels, labels: { style: { colors: '#7a8fa8', fontSize: '10px' } } },
+      yaxis: { labels: { style: { colors: '#7a8fa8' } } },
+      colors: ['#3b82f6', '#10b981'],
+      plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
+      legend: { labels: { colors: '#7a8fa8' } }
+    });
+    _apexAprov.render();
+  } else if (apvEl) {
+    apvEl.innerHTML = '<div class="empty" style="padding:40px"><div class="empty-ico">🏆</div><div>Sem dados de certificação</div></div>';
+  }
+
+  // ── Despesas por Categoria ──
+  const { data: desps } = await sb.from('despesas').select('categoria,valor');
+  const byCateg = {};
+  (desps || []).forEach(d => {
+    byCateg[d.categoria] = (byCateg[d.categoria] || 0) + (d.valor || 0);
+  });
+  const catLabels = Object.keys(byCateg);
+  const despEl = document.getElementById('apex-despesas');
+  if (despEl && catLabels.length) {
+    if (_apexDesp) { _apexDesp.destroy(); _apexDesp = null; }
+    _apexDesp = new ApexCharts(despEl, {
+      ...APEX_OPTS,
+      chart: { ...APEX_OPTS.chart, type: 'donut', height: 200 },
+      series: catLabels.map(k => byCateg[k]),
+      labels: catLabels,
+      colors: ['#f59e0b','#f97316','#ef4444','#8b5cf6','#06b6d4','#10b981','#3b82f6','#ec4899'],
+      legend: { position: 'right', labels: { colors: '#7a8fa8' }, fontSize: '11px' },
+      dataLabels: { enabled: false },
+      plotOptions: { pie: { donut: { size: '65%' } } }
+    });
+    _apexDesp.render();
+  } else if (despEl) {
+    despEl.innerHTML = '<div class="empty" style="padding:40px"><div class="empty-ico">📉</div><div>Sem despesas cadastradas</div></div>';
+  }
+}
+
+// ══════════════════════════════════════════════
+// FULLCALENDAR — Calendário de Turmas
+// ══════════════════════════════════════════════
+let _calendar = null;
+
+async function loadCalendario() {
+  const el = document.getElementById('alpiend-calendar');
+  if (!el || typeof FullCalendar === 'undefined') return;
+
+  const { data: turmas } = await sb.from('turmas')
+    .select('id,nome,curso,data_inicio,data_fim,status,vagas,matriculas(id,status)');
+
+  const statusColor = { 'Aberta': '#10b981', 'Em Andamento': '#f59e0b', 'Encerrada': '#6b7280' };
+
+  const events = (turmas || []).map(t => ({
+    id: t.id,
+    title: t.nome + (t.curso ? ' — ' + t.curso.replace('Acesso por Cordas — ', '') : ''),
+    start: t.data_inicio,
+    end: t.data_fim,
+    backgroundColor: statusColor[t.status] || '#3b82f6',
+    borderColor: statusColor[t.status] || '#3b82f6',
+    textColor: '#000',
+    extendedProps: { status: t.status, vagas: t.vagas, conf: (t.matriculas||[]).filter(m=>!['Cancelado','Desistente'].includes(m.status)).length }
+  }));
+
+  if (_calendar) {
+    _calendar.removeAllEvents();
+    _calendar.addEventSource(events);
+    return;
+  }
+
+  _calendar = new FullCalendar.Calendar(el, {
+    initialView: 'dayGridMonth',
+    locale: 'pt-br',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,listMonth'
+    },
+    buttonText: { today: 'Hoje', month: 'Mês', list: 'Lista' },
+    events,
+    eventClick: function(info) {
+      const p = info.event.extendedProps;
+      Swal && Swal.fire({
+        title: info.event.title,
+        html: '<div style="text-align:left;font-size:14px;line-height:2">' +
+          '📌 Status: <strong>' + p.status + '</strong><br>' +
+          '📅 Início: <strong>' + (info.event.startStr || '—') + '</strong><br>' +
+          '📅 Término: <strong>' + (info.event.endStr || '—') + '</strong><br>' +
+          '👥 Vagas: <strong>' + p.conf + '/' + p.vagas + '</strong>' +
+          '</div>',
+        confirmButtonText: 'Fechar',
+        confirmButtonColor: '#f59e0b',
+        background: '#111827', color: '#f0f4ff'
+      });
+    },
+    eventDidMount: function(info) {
+      const p = info.event.extendedProps;
+      info.el.title = p.status + ' · ' + p.conf + '/' + p.vagas + ' vagas';
+    },
+    themeSystem: 'standard',
+    height: 580,
+    contentHeight: 540
+  });
+  _calendar.render();
+}
+
+// ══════════════════════════════════════════════
+// SHEETJS — Exportar para Excel
+// ══════════════════════════════════════════════
+async function exportarExcel() {
+  if (typeof XLSX === 'undefined') { toast('⚠️','SheetJS não carregado','err'); return; }
+
+  const relContent = document.getElementById('rel-content');
+  const table = relContent && relContent.querySelector('table');
+  if (!table) { toast('⚠️','Carregue um relatório primeiro!','err'); return; }
+
+  // Get current tab name
+  let nomeRel = 'Relatório';
+  document.querySelectorAll('.rtab.on').forEach(b => { nomeRel = b.textContent.trim(); });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.table_to_sheet(table);
+
+  // Style header row
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let C = range.s.c; C <= range.e.c; C++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
+    if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: '1A2340' } } };
+  }
+
+  // Column widths
+  ws['!cols'] = Array(range.e.c + 1).fill({ wch: 20 });
+
+  XLSX.utils.book_append_sheet(wb, ws, nomeRel.slice(0, 30));
+
+  const now = new Date();
+  const stamp = now.toLocaleDateString('pt-BR').replace(/\//g,'-');
+  XLSX.writeFile(wb, 'Alpiend_' + nomeRel.replace(/[^a-zA-Z0-9]/g,'_') + '_' + stamp + '.xlsx');
+  toast('✅', 'Excel exportado!', 'inf');
+}
+
+// ══════════════════════════════════════════════
+// JSPDF — Exportar para PDF
+// ══════════════════════════════════════════════
+async function exportarPDF() {
+  if (typeof jspdf === 'undefined' && typeof window.jspdf === 'undefined') {
+    toast('⚠️','jsPDF não carregado','err'); return;
+  }
+
+  const relContent = document.getElementById('rel-content');
+  const table = relContent && relContent.querySelector('table');
+  if (!table) { toast('⚠️','Carregue um relatório primeiro!','err'); return; }
+
+  let nomeRel = 'Relatório';
+  document.querySelectorAll('.rtab.on').forEach(b => { nomeRel = b.textContent.trim(); });
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  // Header
+  doc.setFillColor(26, 35, 64);
+  doc.rect(0, 0, 297, 22, 'F');
+  doc.setTextColor(245, 158, 11);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ALPIEND TREINAMENTOS', 14, 13);
+  doc.setTextColor(200, 200, 200);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(nomeRel, 160, 13);
+  const now = new Date();
+  doc.text('Emitido: ' + now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}), 200, 13);
+
+  // Table
+  doc.autoTable({
+    html: table,
+    startY: 28,
+    theme: 'grid',
+    headStyles: {
+      fillColor: [26, 35, 64],
+      textColor: [245, 158, 11],
+      fontStyle: 'bold',
+      fontSize: 8,
+      halign: 'left'
+    },
+    bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
+    alternateRowStyles: { fillColor: [248, 249, 250] },
+    styles: { cellPadding: 2.5, overflow: 'linebreak' },
+    margin: { left: 14, right: 14 },
+    didDrawPage: function(data) {
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text('Alpiend Treinamentos · Sistema de Gestão', 14, doc.internal.pageSize.height - 8);
+      doc.text('Página ' + data.pageNumber, 270, doc.internal.pageSize.height - 8);
+    }
+  });
+
+  const stamp = now.toLocaleDateString('pt-BR').replace(/\//g,'-');
+  doc.save('Alpiend_' + nomeRel.replace(/[^a-zA-Z0-9]/g,'_') + '_' + stamp + '.pdf');
+  toast('✅', 'PDF exportado!', 'inf');
+}
+
 function showPanel(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('on'));
@@ -962,6 +1415,7 @@ function showPanel(id){
   else if(id==='financeiro'){showFinTab('receitas');loadFin();}
   else if(id==='kpis')loadKPIs();
   else if(id==='relatorios')showRelTab('contas');
+  else if(id==='calendario')loadCalendario();
 }
 
 // ── MODAL ──────────────────────────────────────────────────────────
@@ -2195,6 +2649,11 @@ function mostrarSQL(){
 }
 async function initApp(){
   await Promise.all([checkBanco(),loadOverview(),loadAlunos()]);
+  // Render charts after data loads
+  setTimeout(function(){
+    renderCharts();
+    renderApexCharts();
+  }, 800);
 }
 
 (function(){
