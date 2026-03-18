@@ -2006,309 +2006,155 @@ async function loadKPIs(){
 // RELATÓRIOS
 // ══════════════════════════════════════════════
 async function relContas(){
-  const{data}=await sb.from('matriculas').select('*,alunos(nome,empresa),turmas(nome,curso)').neq('status','Cancelado').order('data_matricula',{ascending:false});
-  const mats=data||[];const pend=mats.filter(m=>m.status==='Aguardando Pagamento');
   const rc=$('rel-content');if(!rc)return;
-  let html='<div class="sec-hdr"><div class="sec-title">💰 Contas a Receber</div></div>';
-  if(pend.length)html+='<div class="alert info">⚠️ '+pend.length+' inscrição(ões) aguardando pagamento.</div>';
-  html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data</th><th>Treinamento</th><th>IRATA BR</th><th>Total</th><th>Status</th></tr></thead><tbody>';
-  mats.forEach(function(m){
-    const total=(m.valor_pago||0)+(m.valor_certificacao||0);
-    const sc=m.status==='Confirmado'?'bg':m.status==='Aguardando Pagamento'?'bo':'bz';
-    html+='<tr><td>'+esc((m.alunos&&m.alunos.nome)||'—')+'</td><td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td><td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_matricula)+'</td><td>'+fmt(m.valor_pago)+'</td><td>'+fmt(m.valor_certificacao)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(total)+'</td><td><span class="chip '+sc+'">'+esc(m.status||'—')+'</span></td></tr>';
-  });
-  html+='</tbody></table></div>';
-  rc.innerHTML=html;
+  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando...</div></div>';
+  try{
+    const{data,error}=await sb.from('matriculas')
+      .select('*,alunos(nome,empresa),turmas(nome,curso)')
+      .neq('status','Cancelado')
+      .order('data_matricula',{ascending:false});
+    if(error)throw error;
+    const mats=data||[];
+    const pend=mats.filter(m=>m.status==='Aguardando Pagamento');
+    let html='<div class="sec-hdr"><div class="sec-title">💰 Contas a Receber</div><div style="font-size:13px;color:var(--t2)">'+mats.length+' registros</div></div>';
+    if(pend.length)html+='<div class="alert info">⚠️ '+pend.length+' inscrição(ões) aguardando pagamento.</div>';
+    if(!mats.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">💰</div><div>Nenhum registro</div></div>';return;}
+    html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data</th><th>Treinamento</th><th>IRATA</th><th>Total</th><th>Status</th></tr></thead><tbody>';
+    mats.forEach(function(m){
+      const total=(m.valor_pago||0)+(m.valor_certificacao||0);
+      const sc=m.status==='Confirmado'?'bg':m.status==='Aguardando Pagamento'?'bo':'bz';
+      html+='<tr><td>'+esc((m.alunos&&m.alunos.nome)||'—')+'</td><td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td><td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_matricula)+'</td><td>'+fmt(m.valor_pago)+'</td><td>'+fmt(m.valor_certificacao)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(total)+'</td><td><span class="chip '+sc+'">'+esc(m.status||'—')+'</span></td></tr>';
+    });
+    html+='</tbody></table></div>';
+    rc.innerHTML=html;
+  }catch(err){console.error('relContas:',err);rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'</div>';}
 }
 
 async function relNFs(){
-  const{data}=await sb.from('matriculas').select('*,alunos(nome,empresa),turmas(nome)').not('numero_nf','is',null).order('data_nf',{ascending:false});
   const rc=$('rel-content');if(!rc)return;
-  let html='<div class="sec-hdr"><div class="sec-title">🧾 Notas Fiscais</div></div><div class="tbl-wrap"><table><thead><tr><th>NF</th><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data NF</th><th>Total</th><th>Status NF</th></tr></thead><tbody>';
-  (data||[]).forEach(function(m){
-    const total=(m.valor_pago||0)+(m.valor_certificacao||0);
-    const nc=m.status_nf==='Emitida'?'bg':m.status_nf==='Cancelada'?'br':'bo';
-    html+='<tr><td style="font-weight:700">'+esc(m.numero_nf||'—')+'</td><td>'+esc((m.alunos&&m.alunos.nome)||'—')+'</td><td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td><td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_nf)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(total)+'</td><td><span class="chip '+nc+'">'+esc(m.status_nf||'—')+'</span></td></tr>';
-  });
-  html+='</tbody></table></div>';
-  rc.innerHTML=html;
+  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando...</div></div>';
+  try{
+    const{data,error}=await sb.from('matriculas').select('*,alunos(nome,empresa),turmas(nome)').not('numero_nf','is',null).order('data_nf',{ascending:false});
+    if(error)throw error;
+    const nfs=data||[];
+    let html='<div class="sec-hdr"><div class="sec-title">🧾 Notas Fiscais</div><div style="font-size:13px;color:var(--t2)">'+nfs.length+' registros</div></div>';
+    if(!nfs.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">🧾</div><div>Nenhuma NF</div></div>';return;}
+    html+='<div class="tbl-wrap"><table><thead><tr><th>NF</th><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data NF</th><th>Total</th><th>Status</th></tr></thead><tbody>';
+    nfs.forEach(function(m){
+      const total=(m.valor_pago||0)+(m.valor_certificacao||0);
+      const nc=m.status_nf==='Emitida'?'bg':m.status_nf==='Cancelada'?'br':'bo';
+      html+='<tr><td style="font-weight:700">'+esc(m.numero_nf||'—')+'</td><td>'+esc((m.alunos&&m.alunos.nome)||'—')+'</td><td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td><td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_nf)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(total)+'</td><td><span class="chip '+nc+'">'+esc(m.status_nf||'—')+'</span></td></tr>';
+    });
+    html+='</tbody></table></div>';
+    rc.innerHTML=html;
+  }catch(err){console.error('relNFs:',err);rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'</div>';}
 }
 
 async function relReceita(){
-  const{data}=await sb.from('turmas').select('*,matriculas(valor_pago,valor_certificacao,status)').order('nome',{ascending:true});
   const rc=$('rel-content');if(!rc)return;
-  let html='<div class="sec-hdr"><div class="sec-title">📈 Receita por Turma</div></div><div class="tbl-wrap"><table><thead><tr><th>Turma</th><th>Curso</th><th>Alunos</th><th>Treinamento</th><th>IRATA BR</th><th>Total</th></tr></thead><tbody>';
-  (data||[]).forEach(function(t){
-    const conf=(t.matriculas||[]).filter(m=>m.status==='Confirmado');
-    const trein=conf.reduce((s,m)=>s+(m.valor_pago||0),0);
-    const irata=conf.reduce((s,m)=>s+(m.valor_certificacao||0),0);
-    html+='<tr><td><strong>'+esc(t.nome||'—')+'</strong></td><td style="font-size:11px">'+esc(t.curso||'—')+'</td><td>'+conf.length+'</td><td>'+fmt(trein)+'</td><td>'+fmt(irata)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(trein+irata)+'</td></tr>';
-  });
-  html+='</tbody></table></div>';
-  rc.innerHTML=html;
+  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando...</div></div>';
+  try{
+    const{data,error}=await sb.from('turmas').select('*,matriculas(valor_pago,valor_certificacao,status)').order('nome',{ascending:true});
+    if(error)throw error;
+    const turmas=data||[];
+    const totRec=turmas.reduce(function(s,t){return s+(t.matriculas||[]).filter(m=>m.status==='Confirmado').reduce((ss,m)=>ss+(m.valor_pago||0)+(m.valor_certificacao||0),0);},0);
+    let html='<div class="sec-hdr"><div class="sec-title">📈 Receita por Turma</div><div style="font-size:14px;font-weight:700;color:var(--grn)">Total: '+fmt(totRec)+'</div></div>';
+    if(!turmas.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">📈</div><div>Nenhuma turma</div></div>';return;}
+    html+='<div class="tbl-wrap"><table><thead><tr><th>Turma</th><th>Curso</th><th>Confirmados</th><th>Treinamento</th><th>IRATA BR</th><th>Total</th></tr></thead><tbody>';
+    turmas.forEach(function(t){
+      const conf=(t.matriculas||[]).filter(m=>m.status==='Confirmado');
+      const trein=conf.reduce((s,m)=>s+(m.valor_pago||0),0);
+      const irata=conf.reduce((s,m)=>s+(m.valor_certificacao||0),0);
+      html+='<tr><td><strong>'+esc(t.nome||'—')+'</strong></td><td style="font-size:11px;color:var(--acc)">'+esc(t.curso||'—')+'</td><td>'+conf.length+'</td><td>'+fmt(trein)+'</td><td>'+fmt(irata)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(trein+irata)+'</td></tr>';
+    });
+    html+='</tbody></table></div>';
+    rc.innerHTML=html;
+  }catch(err){console.error('relReceita:',err);rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'</div>';}
 }
 
 async function relAprovacao(){
-  const{data}=await sb.from('certificacoes').select('*,alunos(nome)').order('data_emissao',{ascending:false});
-  const certs=data||[];
-  const total=certs.length;
-  const apr=certs.filter(c=>c.nota_aprovacao!=null&&parseFloat(c.nota_aprovacao)>=8.6).length;
   const rc=$('rel-content');if(!rc)return;
-  let html='<div class="sec-hdr"><div class="sec-title">🏆 Relatório de Aprovação</div><div style="margin-left:auto;font-size:13px;color:var(--t2)">Total: '+total+' | Aprovados: <span style="color:var(--grn);font-weight:700">'+apr+'</span> | Taxa: <span style="color:var(--acc);font-weight:700">'+(total>0?Math.round(apr/total*100):0)+'%</span></div></div>';
-  html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Tipo</th><th>Certificado</th><th>Data</th><th>Nota</th><th>Resultado</th><th>Status</th></tr></thead><tbody>';
-  certs.forEach(function(c){
-    const nota=c.nota_aprovacao!=null?parseFloat(c.nota_aprovacao):null;
-    const ok=nota!=null&&nota>=8.6;
-    html+='<tr>'+
-      '<td><strong>'+esc((c.alunos&&c.alunos.nome)||'—')+'</strong></td>'+
-      '<td>'+esc(c.tipo_curso||'—')+'</td>'+
-      '<td>'+esc(c.numero_certificado||'—')+'</td>'+
-      '<td style="font-size:11px">'+fmtD(c.data_emissao)+'</td>'+
-      '<td>'+(nota!=null?'<span style="font-weight:700;color:'+(ok?'var(--grn)':'var(--red)')+'">'+nota.toFixed(1)+'</span>':'—')+'</td>'+
-      '<td>'+(c.resultado_avaliacao?'<span class="chip '+(c.resultado_avaliacao==='Aprovado'?'bg':'br')+'">'+esc(c.resultado_avaliacao)+'</span>':'—')+'</td>'+
-      '<td><span class="chip '+(ok?'bg':'br')+'">'+(ok?'Aprovado':'Reprovado')+'</span></td>'+
-    '</tr>';
-  });
-  html+='</tbody></table></div>';
-  rc.innerHTML=html;
+  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando...</div></div>';
+  try{
+    const{data,error}=await sb.from('certificacoes').select('*,alunos(nome)').order('data_emissao',{ascending:false});
+    if(error)throw error;
+    const certs=data||[];
+    const total=certs.length;
+    const apr=certs.filter(c=>c.nota_aprovacao!=null&&parseFloat(c.nota_aprovacao)>=8.6).length;
+    const taxa=total>0?Math.round(apr/total*100):0;
+    let html='<div class="sec-hdr"><div class="sec-title">🏆 Aprovação</div><div style="display:flex;gap:16px;font-size:13px"><span>Total: <strong>'+total+'</strong></span><span style="color:var(--grn)">Aprovados: <strong>'+apr+'</strong></span><span style="color:var(--acc)">Taxa: <strong>'+taxa+'%</strong></span></div></div>';
+    if(!certs.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">🏆</div><div>Nenhuma certificação</div></div>';return;}
+    html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Tipo</th><th>Certificado</th><th>Emissão</th><th>Vencimento</th><th>Nota</th><th>Resultado</th></tr></thead><tbody>';
+    const now=new Date();
+    certs.forEach(function(c){
+      const nota=c.nota_aprovacao!=null?parseFloat(c.nota_aprovacao):null;
+      const ok=nota!=null&&nota>=8.6;
+      const venc=c.data_vencimento?new Date(c.data_vencimento):null;
+      const dias=venc?Math.ceil((venc-now)/(1000*60*60*24)):null;
+      const vencStr=venc?'<span style="color:'+(dias<0?'var(--red)':dias<=90?'var(--orn)':'var(--grn)')+'">'+fmtD(c.data_vencimento)+'</span>':'—';
+      html+='<tr><td><strong>'+esc((c.alunos&&c.alunos.nome)||'—')+'</strong></td><td><span class="chip">'+esc(c.tipo_curso||'—')+'</span></td><td style="font-size:11px">'+esc(c.numero_certificado||'—')+'</td><td style="font-size:11px">'+fmtD(c.data_emissao)+'</td><td style="font-size:11px">'+vencStr+'</td><td>'+(nota!=null?'<span style="font-weight:700;color:'+(ok?'var(--grn)':'var(--red)')+'">'+nota.toFixed(1)+'</span>':'—')+'</td><td><span class="chip '+(ok?'bg':'br')+'">'+(ok?'✅ Aprovado':'❌ Reprovado')+'</span></td></tr>';
+    });
+    html+='</tbody></table></div>';
+    rc.innerHTML=html;
+  }catch(err){console.error('relAprovacao:',err);rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'</div>';}
 }
 
 async function relRenovacao(){
-  const{data}=await sb.from('certificacoes').select('*,alunos(nome,whatsapp)').order('data_vencimento',{ascending:true});
-  const now=new Date();const in90=new Date();in90.setDate(now.getDate()+90);
-  const certs=(data||[]).filter(c=>c.data_vencimento&&new Date(c.data_vencimento)<=in90);
   const rc=$('rel-content');if(!rc)return;
-  let html='<div class="sec-hdr"><div class="sec-title">🔄 Renovações Necessárias</div></div>';
-  html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Tipo</th><th>Vencimento</th><th>Situação</th><th>WhatsApp</th></tr></thead><tbody>';
-  if(certs.length){
+  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando...</div></div>';
+  try{
+    const{data,error}=await sb.from('certificacoes').select('*,alunos(nome,whatsapp)').order('data_vencimento',{ascending:true});
+    if(error)throw error;
+    const now=new Date();const in90=new Date();in90.setDate(now.getDate()+90);
+    const certs=(data||[]).filter(c=>c.data_vencimento&&new Date(c.data_vencimento)<=in90);
+    let html='<div class="sec-hdr"><div class="sec-title">🔄 Renovações</div><div style="font-size:13px;color:var(--t2)">'+certs.length+' cert(s) vencem em 90 dias</div></div>';
+    if(!certs.length){rc.innerHTML=html+'<div class="alert ok">🎉 Nenhuma renovação pendente nos próximos 90 dias!</div>';return;}
+    html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Tipo</th><th>Vencimento</th><th>Situação</th><th>Avisar</th></tr></thead><tbody>';
     certs.forEach(function(c){
-      const v=new Date(c.data_vencimento);const dias=Math.ceil((v-now)/(1000*60*60*24));
-      const cls=dias<0?'br':dias<=30?'br':dias<=90?'bo':'bz';
+      const v=new Date(c.data_vencimento);
+      const dias=Math.ceil((v-now)/(1000*60*60*24));
+      const cls=dias<0?'br':dias<=30?'br':'bo';
       const label=dias<0?'Vencido '+Math.abs(dias)+'d':dias===0?'Vence hoje':'Vence em '+dias+'d';
       const al=c.alunos||{};
-      const wppBtn=al.whatsapp?'<button class="btn btn-w btn-xs" data-wpp="'+esc(al.whatsapp)+'" data-msg="Olá *'+esc(al.nome||'')+'*! Seu certificado '+esc(c.tipo_curso||'')+(dias<0?' está vencido':' vence em '+dias+' dia(s)')+'. Entre em contato para renovar!" onclick="window.open(wppUrl(this.dataset.wpp,this.dataset.msg),\'_blank\')">📱 Avisar</button>':'—';
-      html+='<tr><td><strong>'+esc(al.nome||'—')+'</strong></td><td>'+esc(c.tipo_curso||'—')+'</td><td style="font-size:11px">'+fmtD(c.data_vencimento)+'</td><td><span class="chip '+cls+'">'+label+'</span></td><td>'+wppBtn+'</td></tr>';
+      const wppBtn=al.whatsapp?
+        '<button class="btn btn-w btn-xs" data-wpp="'+esc(al.whatsapp)+'" data-nome="'+esc(al.nome||'')+'" data-tipo="'+esc(c.tipo_curso||'')+'" data-dias="'+dias+'" onclick="avisarRenov(this)">📱 Avisar</button>':'—';
+      html+='<tr><td><strong>'+esc(al.nome||'—')+'</strong></td><td><span class="chip">'+esc(c.tipo_curso||'—')+'</span></td><td style="font-size:11px">'+fmtD(c.data_vencimento)+'</td><td><span class="chip '+cls+'">'+label+'</span></td><td>'+wppBtn+'</td></tr>';
     });
-  }else{html+='<tr><td colspan="5"><div class="empty">Nenhuma renovação pendente 🎉</div></td></tr>';}
-  html+='</tbody></table></div>';
-  rc.innerHTML=html;
+    html+='</tbody></table></div>';
+    rc.innerHTML=html;
+  }catch(err){console.error('relRenovacao:',err);rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'</div>';}
+}
+function avisarRenov(btn){
+  const wpp=btn.dataset.wpp,nome=btn.dataset.nome,tipo=btn.dataset.tipo,dias=parseInt(btn.dataset.dias);
+  const msg='Olá *'+nome+'*! Seu certificado *'+tipo+'* '+(dias<0?'venceu há '+Math.abs(dias)+' dia(s)':'vence em '+dias+' dia(s)')+'. Entre em contato para renovar! 🏔️';
+  window.open(wppUrl(wpp,msg),'_blank');
 }
 
 async function relDespesas(){
-  const{data}=await sb.from('despesas').select('*,turmas(nome)').order('data',{ascending:false});
-  const desps=data||[];
-  const total=desps.reduce((s,d)=>s+(d.valor||0),0);
   const rc=$('rel-content');if(!rc)return;
-  let html='<div class="sec-hdr"><div class="sec-title">📉 Despesas</div><div style="margin-left:auto;font-weight:700;color:var(--red)">Total: '+fmt(total)+'</div></div>';
-  html+='<div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Responsável</th><th>Turma</th></tr></thead><tbody>';
-  if(desps.length){desps.forEach(function(d){html+='<tr><td style="font-size:11px">'+fmtD(d.data)+'</td><td>'+esc(d.categoria||'—')+'</td><td style="font-size:12px">'+esc(d.descricao||'—')+'</td><td style="font-weight:700;color:var(--red)">'+fmt(d.valor)+'</td><td style="font-size:11px">'+esc(d.responsavel||'—')+'</td><td style="font-size:11px">'+esc((d.turmas&&d.turmas.nome)||'Geral')+'</td></tr>';});}
-  else{html+='<tr><td colspan="6"><div class="empty">Nenhuma despesa</div></td></tr>';}
-  html+='</tbody></table></div>';
-  rc.innerHTML=html;
-}
-
-// ══════════════════════════════════════════════
-// OVERVIEW
-// ══════════════════════════════════════════════
-async function loadOverview(){
-  const[r1,r2,r3,r4,r5]=await Promise.all([
-    sb.from('alunos').select('id,nome,created_at').order('created_at',{ascending:false}).limit(5),
-    sb.from('turmas').select('id,nome,curso,data_inicio,vagas,status,matriculas(id,status)').in('status',['Aberta','Em Andamento']).order('data_inicio',{ascending:true}).limit(5),
-    sb.from('matriculas').select('status'),
-    sb.from('certificacoes').select('id,data_vencimento'),
-    sb.from('leads').select('id,etapa')
-  ]);
-  const alunos=r1.data||[];const turmas=r2.data||[];const mats=r3.data||[];
-  const certs=r4.data||[];const leads=r5.data||[];
-  const now=new Date();const in90=new Date();in90.setDate(now.getDate()+90);
-  const expiring=certs.filter(c=>c.data_vencimento&&new Date(c.data_vencimento)>=now&&new Date(c.data_vencimento)<=in90);
-  const alertEl=$('ov-alerts');
-  if(alertEl){
-    let html='';
-    if(expiring.length)html+='<div class="alert info">🔄 '+expiring.length+' certificação(ões) vencem em até 90 dias. <button class="btn btn-g btn-xs" onclick="showPanel(\'relatorios\');showRelTab(\'renovacao\')">Ver →</button></div>';
-    alertEl.innerHTML=html;
-  }
-  const st=$('ov-stats');
-  if(st){
-    const stats=[
-      ['👥 Alunos',alunos.length,'cadastrados'],
-      ['📋 Matrículas',mats.length,'total'],
-      ['✅ Confirmadas',mats.filter(m=>m.status==='Confirmado').length,'inscrições'],
-      ['🗓️ Turmas Ativas',turmas.length,'abertas'],
-      ['🎯 Leads Ativos',leads.filter(l=>!['Fechado','Perdido'].includes(l.etapa)).length,'leads'],
-      ['🔄 Renovações',expiring.length,'em 90 dias'],
-    ];
-    st.innerHTML=stats.map(function(s){return'<div class="stat-card"><div class="sc-label">'+s[0]+'</div><div class="sc-val" style="font-size:22px">'+s[1]+'</div><div class="sc-sub">'+s[2]+'</div></div>';}).join('');
-  }
-  const ta=$('tb-ov-alunos');
-  if(ta)ta.innerHTML=alunos.length?alunos.map(function(a){return'<tr><td><div style="display:flex;align-items:center;gap:7px"><div class="av av-sm">'+ini(a.nome||'?')+'</div><strong>'+esc(a.nome||'—')+'</strong></div></td><td style="font-size:11px;color:var(--t2)">'+fmtD((a.created_at||'').split('T')[0])+'</td><td style="font-size:11px">—</td></tr>';}).join(''):'<tr><td colspan="3"><div class="empty">Nenhum aluno</div></td></tr>';
-  const tt=$('tb-ov-turmas');
-  if(tt)tt.innerHTML=turmas.length?turmas.map(function(t){
-    const total=t.vagas||0;
-    const conf=(t.matriculas||[]).filter(m=>!['Cancelado','Desistente'].includes(m.status)).length;
-    return'<tr><td><strong>'+esc(t.nome||'—')+'</strong></td><td style="font-size:11px;color:var(--acc)">'+esc(t.curso||'—')+'</td><td style="font-size:11px">'+fmtD(t.data_inicio)+'</td><td style="font-size:11px">'+conf+'/'+total+'</td></tr>';
-  }).join(''):'<tr><td colspan="4"><div class="empty">Nenhuma turma</div></td></tr>';
-}
-
-// ══════════════════════════════════════════════
-// IMPRESSÃO
-// ══════════════════════════════════════════════
-function imprimirRelatorio(){
-  const content=$('rel-content');
-  if(!content||!content.innerHTML.trim()){
-    toast('⚠️','Nenhum relatório carregado para imprimir.','err');return;
-  }
-  // Descobrir qual aba está ativa
-  let titulo='Relatório';
-  document.querySelectorAll('.rtab').forEach(function(b){
-    if(b.classList.contains('on'))titulo=b.textContent.trim();
-  });
-  const now=new Date();
-  const dataHora=now.toLocaleDateString('pt-BR')+' '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  // Extrair tabela e sumário do rel-content
-  // Clonar para não mexer no original
-  const clone=content.cloneNode(true);
-  // Remover botões de ação dentro do clone
-  clone.querySelectorAll('button').forEach(function(b){b.remove();});
-  // Calcular totais se houver tabela
-  let summaryHTML='';
-  const tbl=clone.querySelector('table');
-  if(tbl){
-    // Tentar identificar colunas de valor (R$)
-    const headers=Array.from(tbl.querySelectorAll('thead th')).map(function(th){return th.textContent.trim();});
-    const rows=Array.from(tbl.querySelectorAll('tbody tr'));
-    const totalCols=[];
-    headers.forEach(function(h,i){
-      if(/total|valor|treinamento|irata|receita/i.test(h))totalCols.push({idx:i,label:h});
-    });
-    if(totalCols.length){
-      const sums={};
-      totalCols.forEach(function(col){sums[col.idx]=0;});
-      rows.forEach(function(row){
-        totalCols.forEach(function(col){
-          const cell=row.cells[col.idx];
-          if(cell){
-            const txt=cell.textContent.replace(/[R$\s.]/g,'').replace(',','.');
-            const n=parseFloat(txt);
-            if(!isNaN(n))sums[col.idx]+=n;
-          }
-        });
-      });
-      summaryHTML='<div class="print-summary">';
-      summaryHTML+='<div class="print-sum-card"><div class="print-sum-label">Total de Registros</div><div class="print-sum-val">'+rows.length+'</div></div>';
-      totalCols.forEach(function(col){
-        if(sums[col.idx]>0){
-          summaryHTML+='<div class="print-sum-card"><div class="print-sum-label">'+col.label+'</div><div class="print-sum-val">'+fmt(sums[col.idx])+'</div></div>';
-        }
-      });
-      summaryHTML+='</div>';
+  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando...</div></div>';
+  try{
+    const{data,error}=await sb.from('despesas').select('*,turmas(nome)').order('data',{ascending:false});
+    if(error){
+      if(error.message.includes('does not exist')||error.message.includes('relation')){
+        rc.innerHTML='<div class="alert">⚠️ Tabela "despesas" não existe ainda.<br><button class="btn btn-p btn-sm" style="margin-top:8px" onclick="mostrarSQL()">📋 Ver SQL para criar</button></div>';
+        return;
+      }
+      throw error;
     }
-  }
-  const pa=$('print-area');
-  pa.innerHTML=
-    '<div class="print-header">'+
-      '<div class="print-logo">🏔️ ALPIEND TREINAMENTOS</div>'+
-      '<div class="print-meta"><div style="font-size:13px;font-weight:600">'+titulo+'</div><div>Emitido em: '+dataHora+'</div></div>'+
-    '</div>'+
-    summaryHTML+
-    clone.innerHTML+
-    '<div class="print-footer">'+
-      '<span>Alpiend Treinamentos — Sistema de Gestão</span>'+
-      '<span>'+dataHora+'</span>'+
-    '</div>';
-  window.print();
-}
-
-// ══════════════════════════════════════════════
-// INIT & BOOT
-// ══════════════════════════════════════════════
-const SQL_MIGRACAO = `-- Cole este SQL no Supabase → SQL Editor → Run
-ALTER TABLE alunos ADD COLUMN IF NOT EXISTS data_nascimento date;
-ALTER TABLE alunos ADD COLUMN IF NOT EXISTS tipo_pessoa text DEFAULT 'PF';
-ALTER TABLE alunos ADD COLUMN IF NOT EXISTS notas_fiscais text;
-ALTER TABLE alunos ADD COLUMN IF NOT EXISTS endereco text;
-ALTER TABLE alunos ADD COLUMN IF NOT EXISTS observacoes text;
-ALTER TABLE alunos ADD COLUMN IF NOT EXISTS origem text;
-ALTER TABLE turmas ADD COLUMN IF NOT EXISTS curso text;
-ALTER TABLE turmas ADD COLUMN IF NOT EXISTS data_inicio date;
-ALTER TABLE turmas ADD COLUMN IF NOT EXISTS data_fim date;
-ALTER TABLE turmas ADD COLUMN IF NOT EXISTS horario text;
-ALTER TABLE turmas ADD COLUMN IF NOT EXISTS local text;
-ALTER TABLE turmas ADD COLUMN IF NOT EXISTS vagas integer;
-ALTER TABLE turmas ADD COLUMN IF NOT EXISTS status text DEFAULT 'Aberta';
-ALTER TABLE turmas ADD COLUMN IF NOT EXISTS instrutor text;
-ALTER TABLE turmas ADD COLUMN IF NOT EXISTS observacoes text;
-ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS data_matricula date;
-ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS valor_pago numeric(10,2);
-ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS valor_certificacao numeric(10,2);
-ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS forma_pagamento text;
-ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS status text DEFAULT 'Confirmado';
-ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS numero_nf text;
-ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS data_nf date;
-ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS status_nf text;
-ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS observacao_nf text;
-ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS tipo_curso text;
-ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS numero_certificado text;
-ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS data_emissao date;
-ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS data_vencimento date;
-ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS nota_aprovacao numeric(4,2);
-ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS status text DEFAULT 'Válido';
-ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS observacoes text;
-ALTER TABLE leads ADD COLUMN IF NOT EXISTS nome text;
-ALTER TABLE leads ADD COLUMN IF NOT EXISTS empresa text;
-ALTER TABLE leads ADD COLUMN IF NOT EXISTS email text;
-ALTER TABLE leads ADD COLUMN IF NOT EXISTS whatsapp text;
-ALTER TABLE leads ADD COLUMN IF NOT EXISTS curso_interesse text;
-ALTER TABLE leads ADD COLUMN IF NOT EXISTS valor_estimado numeric(10,2);
-ALTER TABLE leads ADD COLUMN IF NOT EXISTS etapa text DEFAULT 'Novo Lead';
-ALTER TABLE leads ADD COLUMN IF NOT EXISTS followup_data date;
-ALTER TABLE leads ADD COLUMN IF NOT EXISTS observacoes text;
-CREATE TABLE IF NOT EXISTS despesas (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  created_at timestamptz DEFAULT now(),
-  data date NOT NULL,
-  categoria text NOT NULL,
-  descricao text,
-  valor numeric(10,2) NOT NULL,
-  responsavel text,
-  turma_id uuid REFERENCES turmas(id) ON DELETE SET NULL,
-  observacoes text
-);
-ALTER TABLE despesas ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "alpiend_despesas" ON despesas;
-CREATE POLICY "alpiend_despesas" ON despesas FOR ALL USING (true) WITH CHECK (true);
-NOTIFY pgrst, 'reload schema';`;
-
-async function checkBanco(){
-  const erros=[];
-  // Testa alunos — coluna tipo_pessoa
-  const r1=await sb.from('alunos').select('tipo_pessoa').limit(1);
-  if(r1.error&&r1.error.message.includes('tipo_pessoa'))erros.push('alunos: colunas extras ausentes');
-  // Testa turmas — coluna status
-  const r2=await sb.from('turmas').select('status').limit(1);
-  if(r2.error&&r2.error.message.includes('status'))erros.push('turmas: coluna status ausente');
-  // Testa despesas
-  const r3=await sb.from('despesas').select('id').limit(1);
-  if(r3.error&&(r3.error.message.includes('does not exist')||r3.error.message.includes('relation')))
-    erros.push('despesas: tabela não existe');
-  // Testa certificacoes — coluna nota_aprovacao
-  const r4=await sb.from('certificacoes').select('nota_aprovacao').limit(1);
-  if(r4.error&&r4.error.message.includes('nota_aprovacao'))erros.push('certificacoes: colunas ausentes');
-
-  if(erros.length>0){
-    const alertEl=$('ov-alerts');
-    if(alertEl){
-      alertEl.innerHTML=
-        '<div class="alert warn" style="flex-direction:column;align-items:flex-start;gap:10px">'+
-        '<div style="display:flex;align-items:center;gap:10px;width:100%">'+
-        '<span style="font-size:18px">⚠️</span>'+
-        '<div style="flex:1"><strong>Banco de dados desatualizado</strong><br>'+
-        '<span style="font-size:12px;opacity:.8">'+erros.join(' · ')+'</span></div>'+
-        '<button class="btn btn-p btn-sm" onclick="mostrarSQL()">📋 Ver SQL</button>'+
-        '</div></div>'+alertEl.innerHTML;
-    }
-  }
-  return erros.length===0;
+    const desps=data||[];
+    const total=desps.reduce((s,d)=>s+(d.valor||0),0);
+    const cats={};desps.forEach(d=>{cats[d.categoria]=(cats[d.categoria]||0)+(d.valor||0);});
+    const topCat=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+    let html='<div class="sec-hdr"><div class="sec-title">📉 Despesas</div><div style="font-size:14px;font-weight:700;color:var(--red)">Total: '+fmt(total)+'</div></div>';
+    if(!desps.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">📉</div><div>Nenhuma despesa</div></div>';return;}
+    if(topCat.length){html+='<div class="stats-grid" style="margin-bottom:20px">';topCat.slice(0,4).forEach(function(x){html+='<div class="stat-card red"><div class="sc-label">'+esc(x[0])+'</div><div class="sc-val" style="font-size:18px;color:var(--red)">'+fmt(x[1])+'</div></div>';});html+='</div>';}
+    html+='<div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Responsável</th><th>Turma</th></tr></thead><tbody>';
+    const catIco={Comissão:'💼',Instrutor:'👨‍🏫','Café da Manhã':'☕',Material:'📦',Transporte:'🚗',Hospedagem:'🏨',Aluguel:'🏢',Equipamento:'🔧',Outros:'📌'};
+    desps.forEach(function(d){html+='<tr><td style="font-size:11px">'+fmtD(d.data)+'</td><td><span class="chip">'+(catIco[d.categoria]||'📌')+' '+esc(d.categoria||'—')+'</span></td><td style="font-size:12px">'+esc(d.descricao||'—')+'</td><td style="font-weight:700;color:var(--red)">'+fmt(d.valor)+'</td><td style="font-size:11px">'+esc(d.responsavel||'—')+'</td><td style="font-size:11px">'+esc((d.turmas&&d.turmas.nome)||'Geral')+'</td></tr>';});
+    html+='</tbody></table></div>';
+    rc.innerHTML=html;
+  }catch(err){console.error('relDespesas:',err);rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'</div>';}
 }
 
 function copiarSQL(){
