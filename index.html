@@ -6,7 +6,7 @@
 <title>Alpiend — Sistema de Gestão</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
@@ -992,7 +992,11 @@ textarea.inp{min-height:80px;resize:vertical;line-height:1.5}
 const SB_URL='https://lpnoqxvtuinoswfnnzpf.supabase.co',SB_KEY='sb_publishable_FwmG9cNTKInaPYgjfSW1-Q_PMsFRkzx',WPP='5511999999999';
 const USERS={'admin':{hash:'bf46980b10e63a063841146aa7f6f856311d657a7cdcb6733f3aa85db4ef254d',nome:'Admin'},'alpiend':{hash:'f6544785e276c584c4f8ea1e80e7fd6701caa1cdb90e7f446a7a956d93e9d300',nome:'Alpiend'}};
 const SESSION_H=8;
-const sb=supabase.createClient(SB_URL,SB_KEY);
+const sb=supabase.createClient(SB_URL,SB_KEY,{
+  auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
+  realtime:{timeout:0},
+  global:{fetch:(...args)=>fetch(...args)}
+});
 const $=id=>document.getElementById(id);
 
 // ── UTILS ──────────────────────────────────────────────────────────
