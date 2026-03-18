@@ -657,7 +657,7 @@ textarea.inp{min-height:80px;resize:vertical;line-height:1.5}
       <div class="fg">
         <div class="fi"><label class="fl">Valor Treinamento (R$)</label><input class="inp" type="number" id="m-val" step="0.01" placeholder="0,00" min="0"></div>
         <div class="fi"><label class="fl">Taxa IRATA Brasil (R$)</label><input class="inp" type="number" id="m-irata" step="0.01" placeholder="0,00" min="0"></div>
-        <div class="fi"><label class="fl">IRATA Internacional (R$) *</label><input class="inp" type="number" id="m-irata-int" step="0.01" placeholder="0,00 (requer SQL)" min="0"></div>
+        <div class="fi"><label class="fl">IRATA Internacional (R$) *</label><input class="inp" type="number" id="m-irata-int" step="0.01" placeholder="0,00" min="0"></div>
         <div class="fi"><label class="fl">Forma de Pagamento</label>
           <select class="sel" id="m-forma-pag">
             <option>PIX</option><option>Transferência</option><option>Boleto</option><option>Cartão</option><option>Dinheiro</option><option>A combinar</option>
@@ -693,10 +693,10 @@ textarea.inp{min-height:80px;resize:vertical;line-height:1.5}
         <div class="fi full"><label class="fl">Nome da Turma *</label><input class="inp" id="t-nome" placeholder="Ex: IRATA N1 — Turma 010/2025"></div>
         <div class="fi full"><label class="fl">Curso *</label>
           <select class="sel" id="t-curso">
-            <option>Acesso por Cordas — IRATA N1</option>
-            <option>Acesso por Cordas — IRATA N2</option>
-            <option>Acesso por Cordas — IRATA N3</option>
-            <option>Resgate Técnico Industrial</option>
+            <option value="Acesso por Cordas — IRATA N1">Acesso por Cordas — IRATA N1</option>
+            <option value="Acesso por Cordas — IRATA N2">Acesso por Cordas — IRATA N2</option>
+            <option value="Acesso por Cordas — IRATA N3">Acesso por Cordas — IRATA N3</option>
+            <option value="Resgate Técnico Industrial">Resgate Técnico Industrial</option>
           </select>
         </div>
         <div class="fi"><label class="fl">Data de Início</label><input class="inp" type="date" id="t-ini"></div>
@@ -1258,6 +1258,8 @@ async function loadTurmas(){
       '<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div>'+
       '<div style="display:flex;gap:6px;margin-top:10px">'+
       '<button class="btn btn-g btn-xs" data-id="'+t.id+'" onclick="editTurma(this.dataset.id)">✏️</button>'+
+      ''+(['Aberta','Em Andamento'].includes(t.status)?'<button class="btn btn-w btn-xs" data-id="'+t.id+'" data-nome="'+esc(t.nome||'')+
+      '" onclick="encerrarTurma(this.dataset.id,this.dataset.nome)">🔒 Encerrar</button>':'')+
       '<button class="btn btn-d btn-xs" data-id="'+t.id+'" data-nome="'+esc(t.nome||'')+'" onclick="confirmar(\'Excluir Turma\',\'Excluir turma \'+this.dataset.nome+\'?\',function(){delTurma(this.dataset.id);}.bind(this))">🗑️</button>'+
       '</div></div>';
   }).join('');
@@ -1312,45 +1314,68 @@ async function editTurma(id){
   if($('t-vagas'))$('t-vagas').value=data.vagas||'';
   if($('t-instrutor'))$('t-instrutor').value=data.instrutor||'';
   if($('t-obs'))$('t-obs').value=data.observacoes||'';
-  if($('m-turma-t'))$('m-turma-t').textContent='✏️ Editar Turma';
+  if($('m-turma-t'))$('m-turma-t').textContent='✏️ Editar — '+data.nome;
   if($('t-save-btn'))$('t-save-btn').textContent='💾 Atualizar';
+  // Setar curso
+  const selCurso=$('t-curso');
+  if(selCurso&&data.curso){
+    selCurso.value=data.curso;
+    if(!selCurso.value){
+      for(let i=0;i<selCurso.options.length;i++){
+        if(selCurso.options[i].text===data.curso){selCurso.selectedIndex=i;break;}
+      }
+    }
+  }
+  // Setar status — garantido porque options têm value explícito
+  const selStatus=$('t-status');
+  if(selStatus){
+    const st=data.status||'Aberta';
+    selStatus.value=st;
+    if(selStatus.value!==st){
+      for(let i=0;i<selStatus.options.length;i++){
+        if(selStatus.options[i].value===st){selStatus.selectedIndex=i;break;}
+      }
+    }
+  }
   openModal('m-turma');
-  // Setar selects imediatamente (sem race condition)
-  // Set selects directly — more reliable than fSel
-  const tCursoSel=$('t-curso');
-  if(tCursoSel&&data.curso){
-    tCursoSel.value=data.curso;
-    if(!tCursoSel.value){
-      for(let i=0;i<tCursoSel.options.length;i++){
-        if(tCursoSel.options[i].text.trim()===data.curso.trim()){tCursoSel.selectedIndex=i;break;}
-      }
-    }
-  }
-  const tStatusSel=$('t-status');
-  if(tStatusSel&&data.status){
-    tStatusSel.value=data.status;
-    if(!tStatusSel.value){
-      for(let i=0;i<tStatusSel.options.length;i++){
-        if(tStatusSel.options[i].text.trim()===data.status.trim()||tStatusSel.options[i].value===data.status){
-          tStatusSel.selectedIndex=i;break;
-        }
-      }
-    }
-  }
 }
-
 async function saveTurma(){
   const nome=nn($('t-nome')?.value);
   if(!nome){toast('⚠️','Preencha o nome da turma!','err');return;}
+  const statusVal=$('t-status')?.value||'Aberta';
   const btn=$('t-save-btn');if(btn){btn.disabled=true;btn.textContent='Salvando...';}
-  const p={nome,curso:nn($('t-curso')?.value),data_inicio:nn($('t-ini')?.value),data_fim:nn($('t-fim')?.value),horario:nn($('t-horario')?.value),local:nn($('t-local')?.value),vagas:pv($('t-vagas')?.value)||null,status:nn($('t-status')?.value)||'Aberta',instrutor:nn($('t-instrutor')?.value),observacoes:nn($('t-obs')?.value)};
+  const p={
+    nome,
+    curso:nn($('t-curso')?.value),
+    data_inicio:nn($('t-ini')?.value),
+    data_fim:nn($('t-fim')?.value),
+    horario:nn($('t-horario')?.value),
+    local:nn($('t-local')?.value),
+    vagas:pv($('t-vagas')?.value)||null,
+    status:statusVal,
+    instrutor:nn($('t-instrutor')?.value),
+    observacoes:nn($('t-obs')?.value)
+  };
+  console.log('saveTurma payload:', JSON.stringify(p));
   const res=editTurmaId?await sb.from('turmas').update(p).eq('id',editTurmaId):await sb.from('turmas').insert([p]);
   if(btn){btn.disabled=false;btn.textContent=editTurmaId?'💾 Atualizar':'✅ Salvar';}
-  if(res.error){console.error('saveTurma',res.error);toast('❌',res.error.message,'err');return;}
-  closeModal('m-turma');toast('✅',editTurmaId?'Turma atualizada!':'Turma criada!');
+  if(res.error){
+    console.error('saveTurma error:',res.error);
+    toast('❌','Erro: '+res.error.message,'err');return;
+  }
+  closeModal('m-turma');
+  toast('✅',editTurmaId?'Turma atualizada! (Status: '+statusVal+')':'Turma criada!');
   editTurmaId=null;loadTurmas();
 }
 
+// Encerra turma diretamente sem abrir modal
+async function encerrarTurma(id,nome){
+  confirmar('Encerrar Turma','Encerrar a turma "'+nome+'"? O status será alterado para Encerrada.',async function(){
+    const res=await sb.from('turmas').update({status:'Encerrada'}).eq('id',id);
+    if(res.error){toast('❌','Erro ao encerrar: '+res.error.message,'err');return;}
+    toast('✅','Turma encerrada com sucesso!');loadTurmas();
+  });
+}
 async function delTurma(id){
   const{error}=await sb.from('turmas').delete().eq('id',id);
   if(error){toast('❌',error.message,'err');return;}
@@ -2197,8 +2222,133 @@ function imprimirRelatorio(){
 // ══════════════════════════════════════════════
 // INIT & BOOT
 // ══════════════════════════════════════════════
+const SQL_MIGRACAO = `-- Cole este SQL no Supabase → SQL Editor → Run
+ALTER TABLE alunos ADD COLUMN IF NOT EXISTS data_nascimento date;
+ALTER TABLE alunos ADD COLUMN IF NOT EXISTS tipo_pessoa text DEFAULT 'PF';
+ALTER TABLE alunos ADD COLUMN IF NOT EXISTS notas_fiscais text;
+ALTER TABLE alunos ADD COLUMN IF NOT EXISTS endereco text;
+ALTER TABLE alunos ADD COLUMN IF NOT EXISTS observacoes text;
+ALTER TABLE alunos ADD COLUMN IF NOT EXISTS origem text;
+ALTER TABLE turmas ADD COLUMN IF NOT EXISTS curso text;
+ALTER TABLE turmas ADD COLUMN IF NOT EXISTS data_inicio date;
+ALTER TABLE turmas ADD COLUMN IF NOT EXISTS data_fim date;
+ALTER TABLE turmas ADD COLUMN IF NOT EXISTS horario text;
+ALTER TABLE turmas ADD COLUMN IF NOT EXISTS local text;
+ALTER TABLE turmas ADD COLUMN IF NOT EXISTS vagas integer;
+ALTER TABLE turmas ADD COLUMN IF NOT EXISTS status text DEFAULT 'Aberta';
+ALTER TABLE turmas ADD COLUMN IF NOT EXISTS instrutor text;
+ALTER TABLE turmas ADD COLUMN IF NOT EXISTS observacoes text;
+ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS data_matricula date;
+ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS valor_pago numeric(10,2);
+ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS valor_certificacao numeric(10,2);
+ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS forma_pagamento text;
+ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS status text DEFAULT 'Confirmado';
+ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS numero_nf text;
+ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS data_nf date;
+ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS status_nf text;
+ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS observacao_nf text;
+ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS tipo_curso text;
+ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS numero_certificado text;
+ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS data_emissao date;
+ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS data_vencimento date;
+ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS nota_aprovacao numeric(4,2);
+ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS status text DEFAULT 'Válido';
+ALTER TABLE certificacoes ADD COLUMN IF NOT EXISTS observacoes text;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS nome text;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS empresa text;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS whatsapp text;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS curso_interesse text;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS valor_estimado numeric(10,2);
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS etapa text DEFAULT 'Novo Lead';
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS followup_data date;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS observacoes text;
+CREATE TABLE IF NOT EXISTS despesas (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at timestamptz DEFAULT now(),
+  data date NOT NULL,
+  categoria text NOT NULL,
+  descricao text,
+  valor numeric(10,2) NOT NULL,
+  responsavel text,
+  turma_id uuid REFERENCES turmas(id) ON DELETE SET NULL,
+  observacoes text
+);
+ALTER TABLE despesas ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "alpiend_despesas" ON despesas;
+CREATE POLICY "alpiend_despesas" ON despesas FOR ALL USING (true) WITH CHECK (true);
+NOTIFY pgrst, 'reload schema';`;
+
+async function checkBanco(){
+  const erros=[];
+  // Testa alunos — coluna tipo_pessoa
+  const r1=await sb.from('alunos').select('tipo_pessoa').limit(1);
+  if(r1.error&&r1.error.message.includes('tipo_pessoa'))erros.push('alunos: colunas extras ausentes');
+  // Testa turmas — coluna status
+  const r2=await sb.from('turmas').select('status').limit(1);
+  if(r2.error&&r2.error.message.includes('status'))erros.push('turmas: coluna status ausente');
+  // Testa despesas
+  const r3=await sb.from('despesas').select('id').limit(1);
+  if(r3.error&&(r3.error.message.includes('does not exist')||r3.error.message.includes('relation')))
+    erros.push('despesas: tabela não existe');
+  // Testa certificacoes — coluna nota_aprovacao
+  const r4=await sb.from('certificacoes').select('nota_aprovacao').limit(1);
+  if(r4.error&&r4.error.message.includes('nota_aprovacao'))erros.push('certificacoes: colunas ausentes');
+
+  if(erros.length>0){
+    const alertEl=$('ov-alerts');
+    if(alertEl){
+      alertEl.innerHTML=
+        '<div class="alert warn" style="flex-direction:column;align-items:flex-start;gap:10px">'+
+        '<div style="display:flex;align-items:center;gap:10px;width:100%">'+
+        '<span style="font-size:18px">⚠️</span>'+
+        '<div style="flex:1"><strong>Banco de dados desatualizado</strong><br>'+
+        '<span style="font-size:12px;opacity:.8">'+erros.join(' · ')+'</span></div>'+
+        '<button class="btn btn-p btn-sm" onclick="mostrarSQL()">📋 Ver SQL</button>'+
+        '</div></div>'+alertEl.innerHTML;
+    }
+  }
+  return erros.length===0;
+}
+
+function copiarSQL(){
+  navigator.clipboard.writeText(SQL_MIGRACAO).then(function(){toast('✅','SQL copiado!','inf');});
+}
+function fecharModal(id){
+  const el=document.getElementById(id);if(el)el.remove();
+}
+function mostrarSQL(){
+  const old=document.getElementById('sql-modal');if(old)old.remove();
+  const div=document.createElement('div');
+  div.className='ov open';div.id='sql-modal';div.style.zIndex='500';
+  const sqlEsc=esc(SQL_MIGRACAO);
+  // Botão fechar usa dataset para evitar aspas aninhadas
+  div.innerHTML=
+    '<div class="modal" style="max-width:700px">'+
+    '<div class="modal-head">'+
+    '<span class="modal-title">⚙️ SQL de Migração — Supabase</span>'+
+    '<button class="btn btn-g btn-xs sql-close">✕</button>'+
+    '</div>'+
+    '<div class="modal-body">'+
+    '<div class="alert info" style="margin-bottom:14px">'+
+    '📌 <strong>Como executar:</strong> Supabase → SQL Editor → New query → Cole o SQL → clique em <strong>Run</strong>'+
+    '</div>'+
+    '<div style="position:relative">'+
+    '<button class="btn btn-p btn-sm sql-copy" style="position:absolute;top:8px;right:8px;z-index:1">📋 Copiar</button>'+
+    '<pre style="background:var(--bg);border:1px solid var(--brd);border-radius:10px;padding:50px 16px 16px;'+
+    'font-size:11px;color:#4ade80;overflow:auto;max-height:420px;white-space:pre;font-family:monospace;line-height:1.6">'+
+    sqlEsc+'</pre></div>'+
+    '</div>'+
+    '<div class="modal-foot">'+
+    '<button class="btn btn-g sql-close">Fechar</button>'+
+    '<button class="btn btn-p sql-copy">📋 Copiar SQL</button>'+
+    '</div></div>';
+  div.querySelectorAll('.sql-close').forEach(function(b){b.onclick=function(){fecharModal('sql-modal');};});
+  div.querySelectorAll('.sql-copy').forEach(function(b){b.onclick=copiarSQL;});
+  document.body.appendChild(div);
+}
 async function initApp(){
-  await Promise.all([loadOverview(),loadAlunos()]);
+  await Promise.all([checkBanco(),loadOverview(),loadAlunos()]);
 }
 
 (function(){
