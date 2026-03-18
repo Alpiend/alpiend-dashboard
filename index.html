@@ -1465,13 +1465,6 @@ function showPanel(id){
 // ── MODAL ──────────────────────────────────────────────────────────
 function openModal(id){const e=$(id);if(e)e.classList.add('open');}
 function closeModal(id){const e=$(id);if(e)e.classList.remove('open');}
-function confirmar(title,msg,cb){
-  if($('confirm-t'))$('confirm-t').textContent=title;
-  if($('confirm-msg'))$('confirm-msg').textContent=msg;
-  if($('confirm-ok')){$('confirm-ok').onclick=()=>{closeModal('m-confirm');cb();};}
-  openModal('m-confirm');
-}
-
 // ── CEP ──────────────────────────────────────────────────────────
 async function buscaCEP(cep,prefix){
   const c=cep.replace(/\D/g,'');if(c.length!==8)return;
