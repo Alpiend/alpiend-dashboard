@@ -2473,521 +2473,434 @@ async function loadResultado(){
 // KPIs
 // ══════════════════════════════════════════════
 async function loadKPIs(){
-  // Buscar todos os dados necessários em paralelo
-  const [r1, r2, r3, r4, r5] = await Promise.all([
-    sb.from('certificacoes').select('*,alunos(nome)'),
-    sb.from('matriculas').select('*,turmas(nome,curso)'),
-    sb.from('turmas').select('id,nome,curso,status,vagas,matriculas(id,status,valor_pago,valor_certificacao)'),
-    sb.from('despesas').select('valor,categoria,data'),
-    sb.from('leads').select('id,etapa,valor_estimado')
-  ]);
+  // Mostrar loading
+  var ids=['kpi-fin-stats','kpi-op-stats','kpi-cert-stats','tb-kpi-curso','tb-kpi-renov','tb-kpi-turma'];
+  ids.forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML='<tr><td colspan="9" style="color:var(--t2);padding:16px;text-align:center">⏳ Carregando...</td></tr>';});
+  var fs=document.getElementById('kpi-fin-stats');
+  var os=document.getElementById('kpi-op-stats');
+  var cs=document.getElementById('kpi-cert-stats');
+  if(fs)fs.innerHTML='<div style="color:var(--t2);padding:16px">⏳ Carregando...</div>';
+  if(os)os.innerHTML='';
+  if(cs)cs.innerHTML='';
 
-  const certs  = r1.data || [];
-  const mats   = r2.data || [];
-  const turmas = r3.data || [];
-  const desps  = r4.data || [];
-  const leads  = r5.data || [];
+  // Buscar dados sequencialmente (mais robusto que Promise.all)
+  var mats=[], turmas=[], certs=[], desps=[], leads=[];
+  try{ var r=await sb.from('matriculas').select('status,valor_pago,valor_certificacao,data_matricula'); if(!r.error)mats=r.data||[]; }catch(ex){}
+  try{ var r=await sb.from('turmas').select('id,nome,curso,status,vagas'); if(!r.error)turmas=r.data||[]; }catch(ex){}
+  try{ var r=await sb.from('certificacoes').select('tipo_curso,nota_aprovacao,data_vencimento,alunos(nome)'); if(!r.error)certs=r.data||[]; }catch(ex){}
+  try{ var r=await sb.from('despesas').select('valor,categoria'); if(!r.error)desps=r.data||[]; }catch(ex){}
+  try{ var r=await sb.from('leads').select('etapa,valor_estimado'); if(!r.error)leads=r.data||[]; }catch(ex){}
 
-  // ── Cálculos financeiros ──
-  const matsConf = mats.filter(m => m.status === 'Confirmado');
-  const receitaTotal = matsConf.reduce((s,m) => s + (m.valor_pago||0) + (m.valor_certificacao||0), 0);
-  const despTotal    = desps.reduce((s,d) => s + (d.valor||0), 0);
-  const margemLiq    = receitaTotal - despTotal;
-  const tkMedio      = matsConf.length > 0 ? receitaTotal / matsConf.length : 0;
-  const pendentes    = mats.filter(m => m.status === 'Aguardando Pagamento').reduce((s,m) => s + (m.valor_pago||0) + (m.valor_certificacao||0), 0);
-  const leadsAtivos  = leads.filter(l => !['Fechado','Perdido'].includes(l.etapa));
-  const potencial    = leadsAtivos.reduce((s,l) => s + (l.valor_estimado||0), 0);
+  // Calcular
+  var conf=mats.filter(function(m){return m.status==='Confirmado';});
+  var receita=conf.reduce(function(s,m){return s+(m.valor_pago||0)+(m.valor_certificacao||0);},0);
+  var despTotal=desps.reduce(function(s,d){return s+(d.valor||0);},0);
+  var margem=receita-despTotal;
+  var tkMedio=conf.length>0?receita/conf.length:0;
+  var pend=mats.filter(function(m){return m.status==='Aguardando Pagamento';});
+  var valorPend=pend.reduce(function(s,m){return s+(m.valor_pago||0)+(m.valor_certificacao||0);},0);
+  var leadsAt=leads.filter(function(l){return l.etapa!=='Fechado'&&l.etapa!=='Perdido';});
+  var pipeline=leadsAt.reduce(function(s,l){return s+(l.valor_estimado||0);},0);
 
-  // ── KPI Cards Financeiros ──
-  const kfin = $('kpi-fin-stats');
-  if (kfin) kfin.innerHTML = [
-    ['💵 Receita Total',    fmt(receitaTotal), 'Confirmados', ''],
-    ['📉 Total Despesas',   fmt(despTotal),    'Registradas', 'red'],
-    ['📊 Margem Líquida',   fmt(margemLiq),    margemLiq>=0?'Positiva ✅':'Negativa ⚠️', margemLiq>=0?'grn':'red'],
-    ['🎯 Ticket Médio',     fmt(tkMedio),      'Por inscrição', ''],
-    ['⏳ A Receber',        fmt(pendentes),    'Aguardando pag.', ''],
-    ['🌱 Pipeline Leads',   fmt(potencial),    leadsAtivos.length+' leads ativos', 'pur'],
-  ].map(([l,v,sub,cls]) =>
-    '<div class="stat-card '+(cls||'')+'"><div class="sc-label">'+l+'</div>'+
-    '<div class="sc-val" style="font-size:20px;color:'+(cls==='red'?'var(--red)':cls==='grn'?'var(--grn)':cls==='pur'?'var(--pur)':'var(--t1)')+'">'+v+'</div>'+
-    '<div class="sc-sub">'+sub+'</div></div>'
-  ).join('');
-
-  // ── KPI Cards Operacionais ──
-  const totalVagas    = turmas.reduce((s,t) => s + (t.vagas||0), 0);
-  const totalOcup     = turmas.reduce((s,t) => s + (t.matriculas||[]).filter(m => !['Cancelado','Desistente'].includes(m.status)).length, 0);
-  const taxaOcup      = totalVagas > 0 ? Math.round(totalOcup/totalVagas*100) : 0;
-  const cancelados    = mats.filter(m => ['Cancelado','Desistente'].includes(m.status)).length;
-  const txCancel      = mats.length > 0 ? Math.round(cancelados/mats.length*100) : 0;
-  const turmasAtivas  = turmas.filter(t => ['Aberta','Em Andamento'].includes(t.status)).length;
-
-  const kop = $('kpi-op-stats');
-  if (kop) kop.innerHTML = [
-    ['📋 Total Matrículas', mats.length,         'Todas as inscrições', ''],
-    ['✅ Confirmadas',       matsConf.length,     'Inscrições pagas', 'grn'],
-    ['❌ Cancelamentos',     cancelados,          txCancel+'% de cancelamento', cancelados>0?'red':''],
-    ['🗓️ Turmas Ativas',    turmasAtivas,        'Abertas / Em andamento', ''],
-    ['👥 Ocupação Média',   taxaOcup+'%',        totalOcup+'/'+totalVagas+' vagas', taxaOcup>=80?'grn':taxaOcup>=50?'':'red'],
-    ['🎯 Leads Ativos',     leadsAtivos.length,  'Em negociação', ''],
-  ].map(([l,v,sub,cls]) =>
-    '<div class="stat-card '+(cls||'')+'"><div class="sc-label">'+l+'</div>'+
-    '<div class="sc-val" style="color:'+(cls==='red'?'var(--red)':cls==='grn'?'var(--grn)':'var(--t1)')+'">'+v+'</div>'+
-    '<div class="sc-sub">'+sub+'</div></div>'
-  ).join('');
-
-  // ── KPI Cards Certificações ──
-  const totalCerts = certs.length;
-  const aprovados  = certs.filter(c => c.nota_aprovacao!=null && parseFloat(c.nota_aprovacao)>=8.6).length;
-  const reprovados = certs.filter(c => c.nota_aprovacao!=null && parseFloat(c.nota_aprovacao)<8.6).length;
-  const taxaAprov  = totalCerts > 0 ? Math.round(aprovados/totalCerts*100) : 0;
-  const now        = new Date(); const in90 = new Date(); in90.setDate(now.getDate()+90);
-  const vencendo   = certs.filter(c => c.data_vencimento && new Date(c.data_vencimento)<=in90 && new Date(c.data_vencimento)>=now).length;
-  const vencidos   = certs.filter(c => c.data_vencimento && new Date(c.data_vencimento)<now).length;
-  const notaMedia  = certs.filter(c=>c.nota_aprovacao!=null).reduce((s,c,_,a) => s+parseFloat(c.nota_aprovacao)/a.length, 0);
-
-  const kcert = $('kpi-cert-stats');
-  if (kcert) kcert.innerHTML = [
-    ['🏆 Certificados',  totalCerts,               'Total emitidos', ''],
-    ['✅ Aprovados',      aprovados,               taxaAprov+'% taxa', 'grn'],
-    ['❌ Reprovados',     reprovados,              reprovados>0?'Atenção!':'', reprovados>0?'red':''],
-    ['📊 Taxa Aprovação', taxaAprov+'%',           'Meta: ≥ 80%', taxaAprov>=80?'grn':taxaAprov>=60?'':'red'],
-    ['📝 Nota Média',    notaMedia>0?notaMedia.toFixed(1):'—', 'Aprovação: ≥ 8.6', notaMedia>=8.6?'grn':''],
-    ['⚠️ Vencendo',      vencendo,                'Próximos 90 dias', vencendo>0?'red':''],
-  ].map(([l,v,sub,cls]) =>
-    '<div class="stat-card '+(cls||'')+'"><div class="sc-label">'+l+'</div>'+
-    '<div class="sc-val" style="color:'+(cls==='red'?'var(--red)':cls==='grn'?'var(--grn)':'var(--t1)')+'">'+v+'</div>'+
-    '<div class="sc-sub">'+sub+'</div></div>'
-  ).join('');
-
-  // ── Gráfico Chart.js — Receita Mensal ──
-  if (typeof Chart !== 'undefined') {
-    const months = [];
-    for (let i=5;i>=0;i--) {
-      const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-      months.push({ key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}), val:0 });
-    }
-    matsConf.forEach(m => {
-      if (!m.data_matricula) return;
-      const mk = m.data_matricula.slice(0,7);
-      const mo = months.find(x => x.key===mk);
-      if (mo) mo.val += (m.valor_pago||0) + (m.valor_certificacao||0);
-    });
-    const ctxK = document.getElementById('kpi-chart-receita');
-    if (ctxK) {
-      if (ctxK._chartInst) ctxK._chartInst.destroy();
-      ctxK._chartInst = new Chart(ctxK, {
-        type: 'bar',
-        data: {
-          labels: months.map(m=>m.label),
-          datasets: [{
-            label: 'Receita',
-            data: months.map(m=>m.val),
-            backgroundColor: months.map((_,i) => i===5 ? 'rgba(245,158,11,0.9)' : 'rgba(245,158,11,0.45)'),
-            borderColor: '#f59e0b', borderWidth: 2, borderRadius: 6, borderSkipped: false
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend:{display:false}, tooltip:{callbacks:{label: ctx=>'R$ '+ctx.raw.toLocaleString('pt-BR',{minimumFractionDigits:2})}}},
-          scales: {
-            x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#7a8fa8',font:{size:11}}},
-            y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#7a8fa8',callback:v=>'R$'+(v>=1000?(v/1000).toFixed(0)+'k':v)}}
-          }
-        }
-      });
-    }
+  // Helper card
+  function mkCard(label,valor,sub,cor){
+    var v=typeof valor==='number'?fmt(valor):valor;
+    var c=cor?';color:'+cor:'';
+    return '<div class="stat-card"><div class="sc-label">'+label+'</div>'+
+           '<div class="sc-val" style="font-size:20px'+c+'">'+v+'</div>'+
+           '<div class="sc-sub">'+sub+'</div></div>';
   }
 
-  // ── Gráfico ApexCharts — Aprovação por Curso ──
-  if (typeof ApexCharts !== 'undefined') {
-    const byCurso = {};
-    certs.forEach(c => {
-      const k = c.tipo_curso||'Outro';
-      if (!byCurso[k]) byCurso[k]={total:0,apr:0,rep:0};
-      byCurso[k].total++;
-      if (c.nota_aprovacao!=null && parseFloat(c.nota_aprovacao)>=8.6) byCurso[k].apr++;
-      else if (c.nota_aprovacao!=null) byCurso[k].rep++;
-    });
-    const cursoKeys = Object.keys(byCurso);
-    const apvEl = document.getElementById('kpi-apex-aprov');
-    if (apvEl) {
-      apvEl.innerHTML = '';
-      if (cursoKeys.length) {
-        const apChart = new ApexCharts(apvEl, {
-          chart:{type:'bar',height:220,background:'transparent',toolbar:{show:false},animations:{speed:600}},
-          theme:{mode:'dark'},
-          series:[
-            {name:'Aprovados', data:cursoKeys.map(k=>byCurso[k].apr)},
-            {name:'Reprovados', data:cursoKeys.map(k=>byCurso[k].rep)}
-          ],
-          xaxis:{categories:cursoKeys, labels:{style:{colors:'#7a8fa8',fontSize:'10px'}}},
-          yaxis:{labels:{style:{colors:'#7a8fa8'}}},
-          colors:['#10b981','#f43f5e'],
-          plotOptions:{bar:{borderRadius:4,columnWidth:'60%',dataLabels:{position:'top'}}},
-          dataLabels:{enabled:true,style:{fontSize:'9px',colors:['#fff']}},
-          legend:{labels:{colors:'#7a8fa8'}},
-          grid:{borderColor:'rgba(255,255,255,.06)'},
-          tooltip:{theme:'dark'}
-        });
-        apChart.render();
-      } else {
-        apvEl.innerHTML='<div class="empty" style="padding:30px"><div class="empty-ico">🏆</div><div>Sem dados de certificação</div></div>';
-      }
-    }
-  }
+  // ── Financeiro ──
+  if(fs) fs.innerHTML=
+    mkCard('💵 Receita Total',receita,'Matrículas confirmadas','')+
+    mkCard('📉 Total Despesas',despTotal,'Registradas','var(--red)')+
+    mkCard('📊 Margem Líquida',margem,margem>=0?'✅ Positiva':'⚠️ Negativa',margem>=0?'var(--grn)':'var(--red)')+
+    mkCard('🎯 Ticket Médio',tkMedio,'Por inscrito','')+
+    mkCard('⏳ A Receber',valorPend,pend.length+' pendentes','')+
+    mkCard('🌱 Pipeline',pipeline,leadsAt.length+' leads','var(--pur)');
 
-  // ── Tabela: Aprovação por Curso ──
-  const byCurso2 = {};
-  certs.forEach(c => {
-    const k = c.tipo_curso||'Outro';
-    if (!byCurso2[k]) byCurso2[k]={total:0,apr:0};
-    byCurso2[k].total++;
-    if (c.nota_aprovacao!=null && parseFloat(c.nota_aprovacao)>=8.6) byCurso2[k].apr++;
+  // ── Operacional ──
+  var turmasAt=turmas.filter(function(t){return t.status==='Aberta'||t.status==='Em Andamento';});
+  var cancelados=mats.filter(function(m){return m.status==='Cancelado'||m.status==='Desistente';}).length;
+  var txCancel=mats.length>0?Math.round(cancelados/mats.length*100):0;
+  if(os) os.innerHTML=
+    mkCard('📋 Matrículas',mats.length,'Total inscrições','')+
+    mkCard('✅ Confirmadas',conf.length,'Inscrições pagas','var(--grn)')+
+    mkCard('❌ Cancelamentos',cancelados,txCancel+'% do total',cancelados>0?'var(--red)':'')+
+    mkCard('🗓️ Turmas Ativas',turmasAt.length,'Abertas/andamento','')+
+    mkCard('🎯 Leads Ativos',leadsAt.length,'Em negociação','')+
+    mkCard('📦 Total Turmas',turmas.length,'Cadastradas','');
+
+  // ── Certificações ──
+  var totalC=certs.length;
+  var aprov=certs.filter(function(c){return c.nota_aprovacao!=null&&parseFloat(c.nota_aprovacao)>=8.6;}).length;
+  var reprov=totalC-aprov-(certs.filter(function(c){return c.nota_aprovacao==null;}).length);
+  if(reprov<0)reprov=0;
+  var taxaA=totalC>0?Math.round(aprov/totalC*100):0;
+  var now=new Date(); var d90=new Date(); d90.setDate(now.getDate()+90);
+  var vencendo=certs.filter(function(c){if(!c.data_vencimento)return false;var v=new Date(c.data_vencimento);return v>=now&&v<=d90;}).length;
+  var vencido=certs.filter(function(c){if(!c.data_vencimento)return false;return new Date(c.data_vencimento)<now;}).length;
+  var notas=certs.filter(function(c){return c.nota_aprovacao!=null;});
+  var notaMedia=notas.length>0?notas.reduce(function(s,c){return s+parseFloat(c.nota_aprovacao);},0)/notas.length:0;
+  if(cs) cs.innerHTML=
+    mkCard('🏆 Certificados',totalC,'Total emitidos','')+
+    mkCard('✅ Aprovados',aprov,taxaA+'% taxa','var(--grn)')+
+    mkCard('❌ Reprovados',reprov,reprov>0?'Atenção':'',reprov>0?'var(--red)':'')+
+    mkCard('📊 Taxa Aprovação',taxaA+'%','Meta ≥ 80%',taxaA>=80?'var(--grn)':taxaA>=60?'var(--orn)':'var(--red)')+
+    mkCard('📝 Nota Média',notaMedia>0?notaMedia.toFixed(1)+'  ':'—','Aprovação ≥ 8.6',notaMedia>=8.6?'var(--grn)':'')+
+    mkCard('⚠️ Vencendo',vencendo,'Próximos 90 dias',vencendo>0?'var(--orn)':'');
+
+  // ── Tabela: Aprovação por curso ──
+  var bc={};
+  certs.forEach(function(c){
+    var k=c.tipo_curso||'Outro';
+    if(!bc[k])bc[k]={t:0,a:0};
+    bc[k].t++;
+    if(c.nota_aprovacao!=null&&parseFloat(c.nota_aprovacao)>=8.6)bc[k].a++;
   });
-  const t1 = $('tb-kpi-curso');
-  if (t1) {
-    const rows = Object.entries(byCurso2).map(([curso,d]) => {
-      const tx = d.total>0 ? Math.round(d.apr/d.total*100) : 0;
-      const rep = d.total - d.apr;
-      return '<tr>'+
-        '<td><strong>'+esc(curso)+'</strong></td>'+
-        '<td style="text-align:center">'+d.total+'</td>'+
-        '<td style="text-align:center;color:var(--grn);font-weight:700">'+d.apr+'</td>'+
-        '<td style="text-align:center;color:var(--red)">'+rep+'</td>'+
-        '<td><div style="display:flex;align-items:center;gap:8px">'+
-          '<div style="flex:1;height:6px;background:var(--bg4);border-radius:99px">'+
-            '<div style="width:'+tx+'%;height:100%;background:'+(tx>=80?'var(--grn)':tx>=60?'var(--orn)':'var(--red)')+';border-radius:99px"></div>'+
-          '</div>'+
-          '<span style="font-weight:700;color:'+(tx>=80?'var(--grn)':tx>=60?'var(--orn)':'var(--red)')+'">'+tx+'%</span>'+
-        '</div></td>'+
-      '</tr>';
+  var t1=document.getElementById('tb-kpi-curso');
+  if(t1){
+    var rows=Object.keys(bc).map(function(k){
+      var d=bc[k]; var tx=d.t>0?Math.round(d.a/d.t*100):0; var cor=tx>=80?'var(--grn)':tx>=60?'var(--orn)':'var(--red)';
+      return '<tr><td><strong>'+esc(k)+'</strong></td><td style="text-align:center">'+d.t+'</td>'+
+             '<td style="text-align:center;color:var(--grn);font-weight:700">'+d.a+'</td>'+
+             '<td style="text-align:center;color:var(--red)">'+(d.t-d.a)+'</td>'+
+             '<td><div style="display:flex;align-items:center;gap:8px">'+
+             '<div style="flex:1;height:6px;background:var(--bg4);border-radius:99px">'+
+             '<div style="width:'+tx+'%;height:100%;background:'+cor+';border-radius:99px"></div></div>'+
+             '<span style="font-weight:700;min-width:32px;color:'+cor+'">'+tx+'%</span></div></td></tr>';
     });
-    t1.innerHTML = rows.join('') || '<tr><td colspan="5" style="text-align:center;color:var(--t2)">Sem dados de certificação</td></tr>';
+    t1.innerHTML=rows.length?rows.join(''):'<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--t2)">Nenhuma certificação cadastrada</td></tr>';
   }
 
-  // ── Tabela: Renovações Próximas ──
-  const renovs = certs.filter(c => {
-    if (!c.data_vencimento) return false;
-    const v = new Date(c.data_vencimento);
-    return v <= in90;
-  }).sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
-
-  const t2 = $('tb-kpi-renov');
-  if (t2) {
-    t2.innerHTML = renovs.length ? renovs.map(c => {
-      const v = new Date(c.data_vencimento);
-      const dias = Math.ceil((v-now)/(1000*60*60*24));
-      const cls = dias<0?'br':dias<=30?'br':'bo';
-      const label = dias<0?'Vencido '+Math.abs(dias)+'d':dias===0?'Hoje':'Em '+dias+'d';
-      return '<tr>'+
-        '<td><strong>'+esc((c.alunos&&c.alunos.nome)||'—')+'</strong></td>'+
-        '<td style="font-size:11px"><span class="chip">'+esc(c.tipo_curso||'—')+'</span></td>'+
-        '<td style="font-size:11px">'+fmtD(c.data_vencimento)+'</td>'+
-        '<td><span class="chip '+cls+'">'+label+'</span></td>'+
-      '</tr>';
-    }).join('') : '<tr><td colspan="4"><div class="empty" style="padding:12px">✅ Nenhuma renovação pendente</div></td></tr>';
+  // ── Tabela: Renovações ──
+  var renovs=certs.filter(function(c){if(!c.data_vencimento)return false;return new Date(c.data_vencimento)<=d90;})
+    .sort(function(a,b){return new Date(a.data_vencimento)-new Date(b.data_vencimento);});
+  var t2=document.getElementById('tb-kpi-renov');
+  if(t2){
+    t2.innerHTML=renovs.length?renovs.map(function(c){
+      var v=new Date(c.data_vencimento); var dias=Math.ceil((v-now)/(864e5));
+      var cls=dias<0?'br':dias<=30?'br':'bo';
+      var label=dias<0?'Vencido '+Math.abs(dias)+'d':dias===0?'Hoje':'Em '+dias+'d';
+      var nome=(c.alunos&&c.alunos.nome)||'—';
+      return '<tr><td><strong>'+esc(nome)+'</strong></td>'+
+             '<td><span class="chip">'+esc(c.tipo_curso||'—')+'</span></td>'+
+             '<td style="font-size:11px">'+fmtD(c.data_vencimento)+'</td>'+
+             '<td><span class="chip '+cls+'">'+label+'</span></td></tr>';
+    }).join(''):'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--t2)">✅ Sem renovações pendentes</td></tr>';
   }
 
   // ── Tabela: Receita por Turma ──
-  const recTot = turmas.reduce((s,t) => {
-    return s + (t.matriculas||[]).filter(m=>m.status==='Confirmado').reduce((ss,m)=>ss+(m.valor_pago||0)+(m.valor_certificacao||0),0);
-  }, 0);
-
-  const t3 = $('tb-kpi-turma');
-  if (t3) {
-    const rows = turmas
-      .map(t => {
-        const conf = (t.matriculas||[]).filter(m=>m.status==='Confirmado');
-        const trein = conf.reduce((s,m)=>s+(m.valor_pago||0),0);
-        const irata = conf.reduce((s,m)=>s+(m.valor_certificacao||0),0);
-        const total = trein+irata;
-        const pct = recTot>0 ? Math.round(total/recTot*100) : 0;
-        return {t,conf:conf.length,trein,irata,total,pct};
-      })
-      .filter(r=>r.total>0)
-      .sort((a,b)=>b.total-a.total);
-
-    t3.innerHTML = rows.length ? rows.map(r =>
-      '<tr>'+
-        '<td><strong>'+esc(r.t.nome||'—')+'</strong></td>'+
-        '<td style="font-size:11px;color:var(--acc)">'+esc(r.t.curso||'—')+'</td>'+
-        '<td style="text-align:center">'+r.conf+'</td>'+
-        '<td>'+fmt(r.trein)+'</td>'+
-        '<td>'+fmt(r.irata)+'</td>'+
-        '<td style="font-weight:700;color:var(--grn)">'+fmt(r.total)+'</td>'+
-        '<td><div style="display:flex;align-items:center;gap:8px">'+
-          '<div style="flex:1;height:5px;background:var(--bg4);border-radius:99px">'+
-            '<div style="width:'+r.pct+'%;height:100%;background:var(--acc);border-radius:99px"></div>'+
-          '</div>'+
-          '<span style="font-size:11px;color:var(--acc)">'+r.pct+'%</span>'+
-        '</div></td>'+
-      '</tr>'
-    ).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--t2)">Nenhuma receita registrada</td></tr>';
+  var t3=document.getElementById('tb-kpi-turma');
+  if(t3&&turmas.length>0){
+    // Buscar matriculas com turma
+    var mr=await sb.from('matriculas').select('turma_id,status,valor_pago,valor_certificacao');
+    var allMats=(!mr.error&&mr.data)||[];
+    var totRec=0;
+    var turmaRows=turmas.map(function(t){
+      var tm=allMats.filter(function(m){return m.turma_id===t.id&&m.status==='Confirmado';});
+      var trein=tm.reduce(function(s,m){return s+(m.valor_pago||0);},0);
+      var irata=tm.reduce(function(s,m){return s+(m.valor_certificacao||0);},0);
+      totRec+=trein+irata;
+      return {t:t,n:tm.length,trein:trein,irata:irata,total:trein+irata};
+    }).filter(function(r){return r.total>0;}).sort(function(a,b){return b.total-a.total;});
+    t3.innerHTML=turmaRows.length?turmaRows.map(function(r){
+      var pct=totRec>0?Math.round(r.total/totRec*100):0;
+      return '<tr><td><strong>'+esc(r.t.nome||'—')+'</strong></td>'+
+             '<td style="font-size:11px;color:var(--acc)">'+esc(r.t.curso||'—')+'</td>'+
+             '<td style="text-align:center">'+r.n+'</td>'+
+             '<td>'+fmt(r.trein)+'</td><td>'+fmt(r.irata)+'</td>'+
+             '<td style="font-weight:700;color:var(--grn)">'+fmt(r.total)+'</td>'+
+             '<td><div style="display:flex;align-items:center;gap:6px">'+
+             '<div style="flex:1;height:5px;background:var(--bg4);border-radius:99px">'+
+             '<div style="width:'+pct+'%;height:100%;background:var(--acc);border-radius:99px"></div></div>'+
+             '<span style="font-size:11px;color:var(--acc)">'+pct+'%</span></div></td></tr>';
+    }).join(''):'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--t2)">Nenhuma receita registrada</td></tr>';
+  } else if(t3){
+    t3.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--t2)">Nenhuma turma cadastrada</td></tr>';
   }
 }
 
-// ══════════════════════════════════════════════
-// RELATÓRIOS
-// ══════════════════════════════════════════════
 async function relFinanceiro(){
-  const rc=$('rel-content');if(!rc)return;
-  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando relatório financeiro...</div></div>';
-  try{
-    const [r1,r2,r3] = await Promise.all([
-      sb.from('matriculas').select('*,alunos(nome,empresa),turmas(nome,curso)').order('data_matricula',{ascending:false}),
-      sb.from('despesas').select('*,turmas(nome)').order('data',{ascending:false}),
-      sb.from('leads').select('etapa,valor_estimado')
-    ]);
-    if(r1.error) throw r1.error;
+  var rc=document.getElementById('rel-content');
+  if(!rc)return;
+  rc.innerHTML='<div style="text-align:center;padding:40px;color:var(--t2)">⏳ Carregando relatório financeiro...</div>';
 
-    const mats   = r1.data||[];
-    const desps  = r2.data||[];
-    const leads  = r3.data||[];
+  var mats=[], desps=[], leads=[];
+  try{ var r=await sb.from('matriculas').select('status,valor_pago,valor_certificacao,forma_pagamento,data_matricula,alunos(nome,empresa),turmas(nome,curso)').order('data_matricula',{ascending:false}); if(!r.error)mats=r.data||[]; else throw r.error; }
+  catch(ex){ rc.innerHTML='<div class="alert">❌ Erro ao carregar matrículas: '+esc(ex.message||String(ex))+'</div>'; return; }
+  try{ var r=await sb.from('despesas').select('valor,categoria,data,descricao,responsavel'); if(!r.error)desps=r.data||[]; }catch(ex){}
+  try{ var r=await sb.from('leads').select('etapa,valor_estimado'); if(!r.error)leads=r.data||[]; }catch(ex){}
 
-    const conf     = mats.filter(m=>m.status==='Confirmado');
-    const receita  = conf.reduce((s,m)=>s+(m.valor_pago||0)+(m.valor_certificacao||0),0);
-    const despTotal= desps.reduce((s,d)=>s+(d.valor||0),0);
-    const margem   = receita - despTotal;
-    const pendente = mats.filter(m=>m.status==='Aguardando Pagamento').reduce((s,m)=>s+(m.valor_pago||0)+(m.valor_certificacao||0),0);
-    const pipeline = leads.filter(l=>!['Fechado','Perdido'].includes(l.etapa)).reduce((s,l)=>s+(l.valor_estimado||0),0);
-    const tkMedio  = conf.length>0 ? receita/conf.length : 0;
-    const txMargen = receita>0 ? Math.round(margem/receita*100) : 0;
+  var conf=mats.filter(function(m){return m.status==='Confirmado';});
+  var receita=conf.reduce(function(s,m){return s+(m.valor_pago||0)+(m.valor_certificacao||0);},0);
+  var despTotal=desps.reduce(function(s,d){return s+(d.valor||0);},0);
+  var margem=receita-despTotal;
+  var tkMedio=conf.length>0?receita/conf.length:0;
+  var pend=mats.filter(function(m){return m.status==='Aguardando Pagamento';});
+  var valorPend=pend.reduce(function(s,m){return s+(m.valor_pago||0)+(m.valor_certificacao||0);},0);
+  var pipeline=leads.filter(function(l){return l.etapa!=='Fechado'&&l.etapa!=='Perdido';}).reduce(function(s,l){return s+(l.valor_estimado||0);},0);
+  var txMargem=receita>0?Math.round(margem/receita*100):0;
 
-    let html='';
-
-    // ── Resumo Executivo ──
-    html+='<div class="sec-hdr"><div class="sec-title">💰 Relatório Financeiro</div>'+
-      '<div style="font-size:12px;color:var(--t2)">Competência: Acumulado</div></div>';
-
-    html+='<div class="stats-grid" style="margin-bottom:24px">'+
-      [['💵 Receita Total',fmt(receita),'Matrículas confirmadas',''],
-       ['📉 Total Despesas',fmt(despTotal),'Lançamentos registrados','red'],
-       ['📊 Margem Líquida',fmt(margem),(txMargen>=0?'▲ ':'▼ ')+Math.abs(txMargen)+'%',margem>=0?'grn':'red'],
-       ['🎯 Ticket Médio',fmt(tkMedio),'Por inscrito',''],
-       ['⏳ A Receber',fmt(pendente),'Aguardando pagamento',''],
-       ['🌱 Pipeline',fmt(pipeline),'Leads em aberto','pur']
-      ].map(([l,v,sub,cls])=>
-        '<div class="stat-card '+(cls||'')+'">'+
-        '<div class="sc-label">'+l+'</div>'+
-        '<div class="sc-val" style="font-size:20px;color:'+(cls==='red'?'var(--red)':cls==='grn'?'var(--grn)':cls==='pur'?'var(--pur)':'var(--t1)')+'">'+v+'</div>'+
-        '<div class="sc-sub">'+sub+'</div></div>'
-      ).join('')+'</div>';
-
-    // ── DRE Simplificado ──
-    const treinTotal = conf.reduce((s,m)=>s+(m.valor_pago||0),0);
-    const irataTotal = conf.reduce((s,m)=>s+(m.valor_certificacao||0),0);
-    const cats={};desps.forEach(d=>{cats[d.categoria]=(cats[d.categoria]||0)+(d.valor||0);});
-    const sortedCats = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
-
-    html+='<div class="two-col" style="margin-bottom:20px">';
-
-    // DRE
-    html+='<div class="box"><div class="box-title">📋 DRE — Demonstrativo de Resultado</div>'+
-      '<table style="width:100%">'+
-      '<thead><tr><th>Descrição</th><th style="text-align:right">Valor</th><th style="text-align:right">%</th></tr></thead><tbody>'+
-      '<tr><td style="color:var(--grn);font-weight:600">✅ Receita Treinamentos</td><td style="text-align:right;color:var(--grn)">'+fmt(treinTotal)+'</td><td style="text-align:right;font-size:11px;color:var(--t2)">'+Math.round(receita>0?treinTotal/receita*100:0)+'%</td></tr>'+
-      '<tr><td style="color:var(--grn)">✅ Taxas IRATA</td><td style="text-align:right;color:var(--grn)">'+fmt(irataTotal)+'</td><td style="text-align:right;font-size:11px;color:var(--t2)">'+Math.round(receita>0?irataTotal/receita*100:0)+'%</td></tr>'+
-      '<tr style="border-top:2px solid var(--brd2)"><td style="font-weight:700">= Receita Bruta</td><td style="text-align:right;font-weight:700;color:var(--grn)">'+fmt(receita)+'</td><td></td></tr>'+
-      sortedCats.map(([cat,val])=>'<tr><td style="color:var(--red)">(-) '+esc(cat)+'</td><td style="text-align:right;color:var(--red)">('+fmt(val)+')</td><td style="text-align:right;font-size:11px;color:var(--t2)">'+Math.round(receita>0?val/receita*100:0)+'%</td></tr>').join('')+
-      '<tr style="border-top:2px solid var(--brd2)"><td style="font-weight:700">(-) Total Despesas</td><td style="text-align:right;font-weight:700;color:var(--red)">('+fmt(despTotal)+')</td><td></td></tr>'+
-      '<tr style="background:rgba(255,255,255,.04)"><td style="font-weight:800;font-family:Syne,sans-serif">= RESULTADO LÍQUIDO</td>'+
-      '<td style="text-align:right;font-weight:800;color:'+(margem>=0?'var(--grn)':'var(--red)')+'">'+fmt(margem)+'</td>'+
-      '<td style="text-align:right;font-weight:700;color:'+(margem>=0?'var(--grn)':'var(--red)')+'">'+txMargen+'%</td></tr>'+
-      '</tbody></table></div>';
-
-    // Receita por forma de pagamento
-    const byFpag={};
-    conf.forEach(m=>{const k=m.forma_pagamento||'Não inf.';byFpag[k]=(byFpag[k]||0)+(m.valor_pago||0)+(m.valor_certificacao||0);});
-    const fpags=Object.entries(byFpag).sort((a,b)=>b[1]-a[1]);
-    html+='<div class="box"><div class="box-title">💳 Receita por Forma de Pagamento</div>'+
-      '<table style="width:100%"><thead><tr><th>Forma</th><th style="text-align:right">Valor</th><th style="text-align:right">%</th></tr></thead><tbody>'+
-      (fpags.length ? fpags.map(([fp,val])=>'<tr><td>'+esc(fp)+'</td><td style="text-align:right;font-weight:600;color:var(--grn)">'+fmt(val)+'</td><td style="text-align:right;font-size:11px;color:var(--t2)">'+Math.round(receita>0?val/receita*100:0)+'%</td></tr>').join('') :
-      '<tr><td colspan="3" style="text-align:center;color:var(--t2)">Sem dados</td></tr>')+
-      '</tbody></table></div>';
-
-    html+='</div>'; // end two-col
-
-    // ── Extrato completo de matrículas ──
-    const stCls={Confirmado:'bg',Cancelado:'br',Desistente:'br','Aguardando Pagamento':'bo','Documentação Pendente':'bz'};
-    html+='<div class="box-title" style="margin:20px 0 10px">📑 Extrato de Inscrições</div>'+
-      '<div class="tbl-wrap"><table><thead><tr>'+
-      '<th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data</th><th>Treinamento</th><th>IRATA</th><th>Total</th><th>Pagamento</th><th>Status</th>'+
-      '</tr></thead><tbody>'+
-      mats.map(m=>{
-        const total=(m.valor_pago||0)+(m.valor_certificacao||0);
-        const sc=stCls[m.status]||'bz';
-        return '<tr>'+
-          '<td><strong>'+esc((m.alunos&&m.alunos.nome)||'—')+'</strong></td>'+
-          '<td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td>'+
-          '<td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td>'+
-          '<td style="font-size:11px">'+fmtD(m.data_matricula)+'</td>'+
-          '<td>'+fmt(m.valor_pago)+'</td>'+
-          '<td>'+fmt(m.valor_certificacao)+'</td>'+
-          '<td style="font-weight:700;color:var(--grn)">'+fmt(total)+'</td>'+
-          '<td style="font-size:11px">'+esc(m.forma_pagamento||'—')+'</td>'+
-          '<td><span class="chip '+sc+'">'+esc(m.status||'—')+'</span></td>'+
-        '</tr>';
-      }).join('')+
-      '</tbody></table></div>';
-
-    rc.innerHTML=html;
-  }catch(err){
-    console.error('relFinanceiro:',err);
-    rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'<br>'+
-      '<button class="btn btn-g btn-sm" style="margin-top:8px" onclick="relFinanceiro()">↺ Tentar novamente</button></div>';
+  function mkCard(label,valor,sub,cor){
+    var v=typeof valor==='number'?fmt(valor):valor;
+    var c=cor?';color:'+cor:'';
+    return '<div class="stat-card"><div class="sc-label">'+label+'</div>'+
+           '<div class="sc-val" style="font-size:19px'+c+'">'+v+'</div>'+
+           '<div class="sc-sub">'+sub+'</div></div>';
   }
+
+  var stCls={Confirmado:'bg',Cancelado:'br',Desistente:'br','Aguardando Pagamento':'bo','Documentação Pendente':'bz'};
+
+  var html='';
+  html+='<div class="sec-hdr"><div class="sec-title">💰 Relatório Financeiro</div>';
+  html+='<div style="font-size:12px;color:var(--t2)">Acumulado geral</div></div>';
+
+  // Cards resumo
+  html+='<div class="stats-grid" style="margin-bottom:24px">';
+  html+=mkCard('💵 Receita Total',receita,'Confirmados','')+
+        mkCard('📉 Total Despesas',despTotal,'Registradas','var(--red)')+
+        mkCard('📊 Margem Líquida',margem,(txMargem>=0?'▲ ':'▼ ')+Math.abs(txMargem)+'%',margem>=0?'var(--grn)':'var(--red)')+
+        mkCard('🎯 Ticket Médio',tkMedio,'Por inscrito','')+
+        mkCard('⏳ A Receber',valorPend,pend.length+' pendentes','')+
+        mkCard('🌱 Pipeline',pipeline,'Leads em aberto','var(--pur)');
+  html+='</div>';
+
+  // DRE + Forma pagamento
+  var treinTotal=conf.reduce(function(s,m){return s+(m.valor_pago||0);},0);
+  var irataTotal=conf.reduce(function(s,m){return s+(m.valor_certificacao||0);},0);
+  var cats={}; desps.forEach(function(d){cats[d.categoria]=(cats[d.categoria]||0)+(d.valor||0);});
+  var sortCats=Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];});
+  var byFpag={}; conf.forEach(function(m){var k=m.forma_pagamento||'N/A';byFpag[k]=(byFpag[k]||0)+(m.valor_pago||0)+(m.valor_certificacao||0);});
+
+  html+='<div class="two-col" style="margin-bottom:24px">';
+
+  // DRE
+  html+='<div class="box"><div class="box-title">📋 DRE — Demonstrativo de Resultado</div>';
+  html+='<table style="width:100%;font-size:13px">';
+  html+='<thead><tr><th>Descrição</th><th style="text-align:right">Valor</th><th style="text-align:right">%</th></tr></thead><tbody>';
+  html+='<tr><td style="color:var(--grn)">✅ Treinamentos</td><td style="text-align:right;color:var(--grn)">'+fmt(treinTotal)+'</td><td style="text-align:right;font-size:11px;color:var(--t2)">'+Math.round(receita>0?treinTotal/receita*100:0)+'%</td></tr>';
+  html+='<tr><td style="color:var(--grn)">✅ Taxas IRATA</td><td style="text-align:right;color:var(--grn)">'+fmt(irataTotal)+'</td><td style="text-align:right;font-size:11px;color:var(--t2)">'+Math.round(receita>0?irataTotal/receita*100:0)+'%</td></tr>';
+  html+='<tr style="border-top:2px solid var(--brd2);font-weight:700"><td>= Receita Bruta</td><td style="text-align:right;color:var(--grn)">'+fmt(receita)+'</td><td></td></tr>';
+  sortCats.forEach(function(cat){html+='<tr><td style="color:var(--red)">(-) '+esc(cat)+'</td><td style="text-align:right;color:var(--red)">('+fmt(cats[cat])+')</td><td style="text-align:right;font-size:11px;color:var(--t2)">'+Math.round(receita>0?cats[cat]/receita*100:0)+'%</td></tr>';});
+  html+='<tr style="border-top:2px solid var(--brd2);font-weight:700"><td>(-) Total Despesas</td><td style="text-align:right;color:var(--red)">('+fmt(despTotal)+')</td><td></td></tr>';
+  html+='<tr style="background:rgba(255,255,255,.04);font-weight:800"><td style="font-family:Syne,sans-serif">= RESULTADO LÍQUIDO</td>';
+  html+='<td style="text-align:right;font-weight:800;color:'+(margem>=0?'var(--grn)':'var(--red)')+'">'+fmt(margem)+'</td>';
+  html+='<td style="text-align:right;font-weight:700;color:'+(margem>=0?'var(--grn)':'var(--red)')+'">'+txMargem+'%</td></tr>';
+  html+='</tbody></table></div>';
+
+  // Forma de pagamento
+  html+='<div class="box"><div class="box-title">💳 Por Forma de Pagamento</div>';
+  html+='<table style="width:100%;font-size:13px"><thead><tr><th>Forma</th><th style="text-align:right">Valor</th><th style="text-align:right">%</th></tr></thead><tbody>';
+  var fpags=Object.keys(byFpag).sort(function(a,b){return byFpag[b]-byFpag[a];});
+  if(fpags.length){
+    fpags.forEach(function(fp){html+='<tr><td>'+esc(fp)+'</td><td style="text-align:right;font-weight:600;color:var(--grn)">'+fmt(byFpag[fp])+'</td><td style="text-align:right;color:var(--t2)">'+Math.round(receita>0?byFpag[fp]/receita*100:0)+'%</td></tr>';});
+  } else {
+    html+='<tr><td colspan="3" style="text-align:center;color:var(--t2);padding:16px">Sem dados</td></tr>';
+  }
+  html+='</tbody></table></div>';
+  html+='</div>'; // end two-col
+
+  // Extrato completo
+  html+='<div class="box-title" style="margin:4px 0 12px">📑 Extrato de Inscrições ('+mats.length+')</div>';
+  html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data</th><th>Treinamento</th><th>IRATA</th><th>Total</th><th>Pagamento</th><th>Status</th></tr></thead><tbody>';
+  if(mats.length){
+    mats.forEach(function(m){
+      var total=(m.valor_pago||0)+(m.valor_certificacao||0);
+      var sc=stCls[m.status]||'bz';
+      html+='<tr>'+
+        '<td><strong>'+esc((m.alunos&&m.alunos.nome)||'—')+'</strong></td>'+
+        '<td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td>'+
+        '<td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td>'+
+        '<td style="font-size:11px">'+fmtD(m.data_matricula)+'</td>'+
+        '<td>'+fmt(m.valor_pago)+'</td>'+
+        '<td>'+fmt(m.valor_certificacao)+'</td>'+
+        '<td style="font-weight:700;color:var(--grn)">'+fmt(total)+'</td>'+
+        '<td style="font-size:11px">'+esc(m.forma_pagamento||'—')+'</td>'+
+        '<td><span class="chip '+sc+'">'+esc(m.status||'—')+'</span></td>'+
+      '</tr>';
+    });
+  } else {
+    html+='<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--t2)">Nenhuma inscrição cadastrada ainda.</td></tr>';
+  }
+  html+='</tbody></table></div>';
+
+  rc.innerHTML=html;
 }
+
 
 async function relContas(){
-  const rc=$('rel-content');if(!rc)return;
-  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando...</div></div>';
+  var rc=$('rel-content');if(!rc)return;
+  rc.innerHTML='<div style="color:var(--t2);text-align:center;padding:40px">⏳ Carregando...</div>';
   try{
-    const{data,error}=await sb.from('matriculas')
-      .select('*,alunos(nome,empresa),turmas(nome,curso)')
-      .neq('status','Cancelado')
-      .order('data_matricula',{ascending:false});
-    if(error)throw error;
-    const mats=data||[];
-    const pend=mats.filter(m=>m.status==='Aguardando Pagamento');
-    let html='<div class="sec-hdr"><div class="sec-title">💰 Contas a Receber</div><div style="font-size:13px;color:var(--t2)">'+mats.length+' registros</div></div>';
-    if(pend.length)html+='<div class="alert info">⚠️ '+pend.length+' inscrição(ões) aguardando pagamento.</div>';
-    if(!mats.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">💰</div><div>Nenhum registro</div></div>';return;}
-    html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data</th><th>Treinamento</th><th>IRATA</th><th>Total</th><th>Status</th></tr></thead><tbody>';
+    var r=await sb.from('matriculas').select('status,valor_pago,valor_certificacao,data_matricula,alunos(nome,empresa),turmas(nome,curso)').order('data_matricula',{ascending:false});
+    if(r.error)throw new Error(r.error.message);
+    var mats=r.data||[];
+    var pend=mats.filter(function(m){return m.status==='Aguardando Pagamento';});
+    var html='<div class="sec-hdr"><div class="sec-title">📋 Contas a Receber</div><div style="font-size:13px;color:var(--t2)">'+mats.length+' registros</div></div>';
+    if(pend.length)html+='<div class="alert info">⚠️ '+pend.length+' inscrição(ões) aguardando pagamento — '+fmt(pend.reduce(function(s,m){return s+(m.valor_pago||0)+(m.valor_certificacao||0);},0))+'</div>';
+    if(!mats.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">💰</div><div>Nenhuma inscrição</div></div>';return;}
+    var stCls={Confirmado:'bg',Cancelado:'br',Desistente:'br','Aguardando Pagamento':'bo','Documentação Pendente':'bz'};
+    html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data</th><th>Trein.</th><th>IRATA</th><th>Total</th><th>Status</th></tr></thead><tbody>';
     mats.forEach(function(m){
-      const total=(m.valor_pago||0)+(m.valor_certificacao||0);
-      const sc=m.status==='Confirmado'?'bg':m.status==='Aguardando Pagamento'?'bo':'bz';
-      html+='<tr><td>'+esc((m.alunos&&m.alunos.nome)||'—')+'</td><td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td><td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_matricula)+'</td><td>'+fmt(m.valor_pago)+'</td><td>'+fmt(m.valor_certificacao)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(total)+'</td><td><span class="chip '+sc+'">'+esc(m.status||'—')+'</span></td></tr>';
+      var total=(m.valor_pago||0)+(m.valor_certificacao||0);
+      var al=m.alunos||{};var tu=m.turmas||{};
+      html+='<tr><td>'+esc(al.nome||'—')+'</td><td style="font-size:11px">'+esc(al.empresa||'—')+'</td><td style="font-size:11px">'+esc(tu.nome||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_matricula)+'</td><td>'+fmt(m.valor_pago)+'</td><td>'+fmt(m.valor_certificacao)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(total)+'</td><td><span class="chip '+(stCls[m.status]||'bz')+'">'+esc(m.status||'—')+'</span></td></tr>';
     });
     html+='</tbody></table></div>';
     rc.innerHTML=html;
-  }catch(err){console.error('relContas:',err);rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'</div>';}
+  }catch(err){rc.innerHTML='<div class="alert">❌ '+esc(err.message)+'</div>';console.error(err);}
 }
 
 async function relNFs(){
-  const rc=$('rel-content');if(!rc)return;
-  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando...</div></div>';
+  var rc=$('rel-content');if(!rc)return;
+  rc.innerHTML='<div style="color:var(--t2);text-align:center;padding:40px">⏳ Carregando...</div>';
   try{
-    const{data,error}=await sb.from('matriculas').select('*,alunos(nome,empresa),turmas(nome)').not('numero_nf','is',null).order('data_nf',{ascending:false});
-    if(error)throw error;
-    const nfs=data||[];
-    let html='<div class="sec-hdr"><div class="sec-title">🧾 Notas Fiscais</div><div style="font-size:13px;color:var(--t2)">'+nfs.length+' registros</div></div>';
-    if(!nfs.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">🧾</div><div>Nenhuma NF</div></div>';return;}
-    html+='<div class="tbl-wrap"><table><thead><tr><th>NF</th><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data NF</th><th>Total</th><th>Status</th></tr></thead><tbody>';
+    var r=await sb.from('matriculas').select('numero_nf,status_nf,data_nf,valor_pago,valor_certificacao,alunos(nome,empresa),turmas(nome)').not('numero_nf','is',null).order('data_nf',{ascending:false});
+    if(r.error)throw new Error(r.error.message);
+    var nfs=r.data||[];
+    var html='<div class="sec-hdr"><div class="sec-title">🧾 Notas Fiscais</div><div style="font-size:13px;color:var(--t2)">'+nfs.length+' registros</div></div>';
+    if(!nfs.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">🧾</div><div>Nenhuma NF cadastrada</div></div>';return;}
+    var nfCls={Emitida:'bg',Cancelada:'br',Pendente:'bo'};
+    html+='<div class="tbl-wrap"><table><thead><tr><th>NF</th><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data</th><th>Total</th><th>Status NF</th></tr></thead><tbody>';
     nfs.forEach(function(m){
-      const total=(m.valor_pago||0)+(m.valor_certificacao||0);
-      const nc=m.status_nf==='Emitida'?'bg':m.status_nf==='Cancelada'?'br':'bo';
-      html+='<tr><td style="font-weight:700">'+esc(m.numero_nf||'—')+'</td><td>'+esc((m.alunos&&m.alunos.nome)||'—')+'</td><td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td><td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_nf)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(total)+'</td><td><span class="chip '+nc+'">'+esc(m.status_nf||'—')+'</span></td></tr>';
+      var total=(m.valor_pago||0)+(m.valor_certificacao||0);
+      var al=m.alunos||{};var tu=m.turmas||{};
+      html+='<tr><td style="font-weight:700">'+esc(m.numero_nf||'—')+'</td><td>'+esc(al.nome||'—')+'</td><td style="font-size:11px">'+esc(al.empresa||'—')+'</td><td style="font-size:11px">'+esc(tu.nome||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_nf)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(total)+'</td><td><span class="chip '+(nfCls[m.status_nf]||'bz')+'">'+esc(m.status_nf||'—')+'</span></td></tr>';
     });
     html+='</tbody></table></div>';
     rc.innerHTML=html;
-  }catch(err){console.error('relNFs:',err);rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'</div>';}
+  }catch(err){rc.innerHTML='<div class="alert">❌ '+esc(err.message)+'</div>';console.error(err);}
 }
 
 async function relReceita(){
-  const rc=$('rel-content');if(!rc)return;
-  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando...</div></div>';
+  var rc=$('rel-content');if(!rc)return;
+  rc.innerHTML='<div style="color:var(--t2);text-align:center;padding:40px">⏳ Carregando...</div>';
   try{
-    const{data,error}=await sb.from('turmas').select('*,matriculas(valor_pago,valor_certificacao,status)').order('nome',{ascending:true});
-    if(error)throw error;
-    const turmas=data||[];
-    const totRec=turmas.reduce(function(s,t){return s+(t.matriculas||[]).filter(m=>m.status==='Confirmado').reduce((ss,m)=>ss+(m.valor_pago||0)+(m.valor_certificacao||0),0);},0);
-    let html='<div class="sec-hdr"><div class="sec-title">📈 Receita por Turma</div><div style="font-size:14px;font-weight:700;color:var(--grn)">Total: '+fmt(totRec)+'</div></div>';
+    var r=await sb.from('turmas').select('id,nome,curso,matriculas(valor_pago,valor_certificacao,status)').order('nome',{ascending:true});
+    if(r.error)throw new Error(r.error.message);
+    var turmas=r.data||[];
+    var totRec=turmas.reduce(function(s,t){return s+(t.matriculas||[]).filter(function(m){return m.status==='Confirmado';}).reduce(function(ss,m){return ss+(m.valor_pago||0)+(m.valor_certificacao||0);},0);},0);
+    var html='<div class="sec-hdr"><div class="sec-title">📈 Receita por Turma</div><div style="font-size:14px;font-weight:700;color:var(--grn)">Total: '+fmt(totRec)+'</div></div>';
     if(!turmas.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">📈</div><div>Nenhuma turma</div></div>';return;}
-    html+='<div class="tbl-wrap"><table><thead><tr><th>Turma</th><th>Curso</th><th>Confirmados</th><th>Treinamento</th><th>IRATA BR</th><th>Total</th></tr></thead><tbody>';
+    html+='<div class="tbl-wrap"><table><thead><tr><th>Turma</th><th>Curso</th><th>Confirmados</th><th>Trein.</th><th>IRATA</th><th>Total</th></tr></thead><tbody>';
     turmas.forEach(function(t){
-      const conf=(t.matriculas||[]).filter(m=>m.status==='Confirmado');
-      const trein=conf.reduce((s,m)=>s+(m.valor_pago||0),0);
-      const irata=conf.reduce((s,m)=>s+(m.valor_certificacao||0),0);
-      html+='<tr><td><strong>'+esc(t.nome||'—')+'</strong></td><td style="font-size:11px;color:var(--acc)">'+esc(t.curso||'—')+'</td><td>'+conf.length+'</td><td>'+fmt(trein)+'</td><td>'+fmt(irata)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(trein+irata)+'</td></tr>';
+      var conf=(t.matriculas||[]).filter(function(m){return m.status==='Confirmado';});
+      var tr2=conf.reduce(function(s,m){return s+(m.valor_pago||0);},0);
+      var ir=conf.reduce(function(s,m){return s+(m.valor_certificacao||0);},0);
+      html+='<tr><td><strong>'+esc(t.nome||'—')+'</strong></td><td style="font-size:11px;color:var(--acc)">'+esc(t.curso||'—')+'</td><td>'+conf.length+'</td><td>'+fmt(tr2)+'</td><td>'+fmt(ir)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(tr2+ir)+'</td></tr>';
     });
     html+='</tbody></table></div>';
     rc.innerHTML=html;
-  }catch(err){console.error('relReceita:',err);rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'</div>';}
+  }catch(err){rc.innerHTML='<div class="alert">❌ '+esc(err.message)+'</div>';console.error(err);}
 }
 
 async function relAprovacao(){
-  const rc=$('rel-content');if(!rc)return;
-  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando...</div></div>';
+  var rc=$('rel-content');if(!rc)return;
+  rc.innerHTML='<div style="color:var(--t2);text-align:center;padding:40px">⏳ Carregando...</div>';
   try{
-    const{data,error}=await sb.from('certificacoes').select('*,alunos(nome)').order('data_emissao',{ascending:false});
-    if(error)throw error;
-    const certs=data||[];
-    const total=certs.length;
-    const apr=certs.filter(c=>c.nota_aprovacao!=null&&parseFloat(c.nota_aprovacao)>=8.6).length;
-    const taxa=total>0?Math.round(apr/total*100):0;
-    let html='<div class="sec-hdr"><div class="sec-title">🏆 Aprovação</div><div style="display:flex;gap:16px;font-size:13px"><span>Total: <strong>'+total+'</strong></span><span style="color:var(--grn)">Aprovados: <strong>'+apr+'</strong></span><span style="color:var(--acc)">Taxa: <strong>'+taxa+'%</strong></span></div></div>';
+    var r=await sb.from('certificacoes').select('tipo_curso,numero_certificado,data_emissao,data_vencimento,nota_aprovacao,status,alunos(nome)').order('data_emissao',{ascending:false});
+    if(r.error)throw new Error(r.error.message);
+    var certs=r.data||[];
+    var apr=certs.filter(function(c){return c.nota_aprovacao!=null&&parseFloat(c.nota_aprovacao)>=8.6;}).length;
+    var taxa=certs.length>0?Math.round(apr/certs.length*100):0;
+    var html='<div class="sec-hdr"><div class="sec-title">🏆 Índice de Aprovação</div>'+
+      '<div style="display:flex;gap:16px;font-size:13px">'+
+      '<span>Total: <strong>'+certs.length+'</strong></span>'+
+      '<span style="color:var(--grn)">Aprovados: <strong>'+apr+'</strong></span>'+
+      '<span style="color:var(--acc)">Taxa: <strong>'+taxa+'%</strong></span>'+
+      '</div></div>';
     if(!certs.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">🏆</div><div>Nenhuma certificação</div></div>';return;}
+    var now=new Date();
     html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Tipo</th><th>Certificado</th><th>Emissão</th><th>Vencimento</th><th>Nota</th><th>Resultado</th></tr></thead><tbody>';
-    const now=new Date();
     certs.forEach(function(c){
-      const nota=c.nota_aprovacao!=null?parseFloat(c.nota_aprovacao):null;
-      const ok=nota!=null&&nota>=8.6;
-      const venc=c.data_vencimento?new Date(c.data_vencimento):null;
-      const dias=venc?Math.ceil((venc-now)/(1000*60*60*24)):null;
-      const vencStr=venc?'<span style="color:'+(dias<0?'var(--red)':dias<=90?'var(--orn)':'var(--grn)')+'">'+fmtD(c.data_vencimento)+'</span>':'—';
-      html+='<tr><td><strong>'+esc((c.alunos&&c.alunos.nome)||'—')+'</strong></td><td><span class="chip">'+esc(c.tipo_curso||'—')+'</span></td><td style="font-size:11px">'+esc(c.numero_certificado||'—')+'</td><td style="font-size:11px">'+fmtD(c.data_emissao)+'</td><td style="font-size:11px">'+vencStr+'</td><td>'+(nota!=null?'<span style="font-weight:700;color:'+(ok?'var(--grn)':'var(--red)')+'">'+nota.toFixed(1)+'</span>':'—')+'</td><td><span class="chip '+(ok?'bg':'br')+'">'+(ok?'✅ Aprovado':'❌ Reprovado')+'</span></td></tr>';
+      var nota=c.nota_aprovacao!=null?parseFloat(c.nota_aprovacao):null;
+      var ok=nota!=null&&nota>=8.6;
+      var al=c.alunos||{};
+      var venc=c.data_vencimento?new Date(c.data_vencimento):null;
+      var dias=venc?Math.ceil((venc-now)/864e5):null;
+      var vStr=venc?'<span style="color:'+(dias<0?'var(--red)':dias<=90?'var(--orn)':'var(--grn)')+'">'+fmtD(c.data_vencimento)+'</span>':'—';
+      html+='<tr>'+
+        '<td><strong>'+esc(al.nome||'—')+'</strong></td>'+
+        '<td><span class="chip">'+esc(c.tipo_curso||'—')+'</span></td>'+
+        '<td style="font-size:11px">'+esc(c.numero_certificado||'—')+'</td>'+
+        '<td style="font-size:11px">'+fmtD(c.data_emissao)+'</td>'+
+        '<td style="font-size:11px">'+vStr+'</td>'+
+        '<td>'+(nota!=null?'<span style="font-weight:700;color:'+(ok?'var(--grn)':'var(--red)')+'">'+nota.toFixed(1)+'</span>':'—')+'</td>'+
+        '<td><span class="chip '+(ok?'bg':'br')+'">'+(ok?'✅ Aprovado':'❌ Reprovado')+'</span></td>'+
+      '</tr>';
     });
     html+='</tbody></table></div>';
     rc.innerHTML=html;
-  }catch(err){console.error('relAprovacao:',err);rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'</div>';}
+  }catch(err){rc.innerHTML='<div class="alert">❌ '+esc(err.message)+'</div>';console.error(err);}
 }
 
 async function relRenovacao(){
-  const rc=$('rel-content');if(!rc)return;
-  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando...</div></div>';
+  var rc=$('rel-content');if(!rc)return;
+  rc.innerHTML='<div style="color:var(--t2);text-align:center;padding:40px">⏳ Carregando...</div>';
   try{
-    const{data,error}=await sb.from('certificacoes').select('*,alunos(nome,whatsapp)').order('data_vencimento',{ascending:true});
-    if(error)throw error;
-    const now=new Date();const in90=new Date();in90.setDate(now.getDate()+90);
-    const certs=(data||[]).filter(c=>c.data_vencimento&&new Date(c.data_vencimento)<=in90);
-    let html='<div class="sec-hdr"><div class="sec-title">🔄 Renovações</div><div style="font-size:13px;color:var(--t2)">'+certs.length+' cert(s) vencem em 90 dias</div></div>';
-    if(!certs.length){rc.innerHTML=html+'<div class="alert ok">🎉 Nenhuma renovação pendente nos próximos 90 dias!</div>';return;}
+    var r=await sb.from('certificacoes').select('tipo_curso,data_vencimento,alunos(nome,whatsapp)').order('data_vencimento',{ascending:true});
+    if(r.error)throw new Error(r.error.message);
+    var now=new Date();var in90=new Date();in90.setDate(now.getDate()+90);
+    var certs=(r.data||[]).filter(function(c){return c.data_vencimento&&new Date(c.data_vencimento)<=in90;});
+    var html='<div class="sec-hdr"><div class="sec-title">🔄 Renovações</div><div style="font-size:13px;color:var(--t2)">'+certs.length+' vencem em 90 dias</div></div>';
+    if(!certs.length){rc.innerHTML=html+'<div class="alert ok">🎉 Nenhuma renovação nos próximos 90 dias!</div>';return;}
     html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Tipo</th><th>Vencimento</th><th>Situação</th><th>Avisar</th></tr></thead><tbody>';
     certs.forEach(function(c){
-      const v=new Date(c.data_vencimento);
-      const dias=Math.ceil((v-now)/(1000*60*60*24));
-      const cls=dias<0?'br':dias<=30?'br':'bo';
-      const label=dias<0?'Vencido '+Math.abs(dias)+'d':dias===0?'Vence hoje':'Vence em '+dias+'d';
-      const al=c.alunos||{};
-      const wppBtn=al.whatsapp?
-        '<button class="btn btn-w btn-xs" data-wpp="'+esc(al.whatsapp)+'" data-nome="'+esc(al.nome||'')+'" data-tipo="'+esc(c.tipo_curso||'')+'" data-dias="'+dias+'" onclick="avisarRenov(this)">📱 Avisar</button>':'—';
+      var al=c.alunos||{};
+      var v=new Date(c.data_vencimento);
+      var dias=Math.ceil((v-now)/864e5);
+      var cls=dias<0?'br':dias<=30?'br':'bo';
+      var label=dias<0?'Vencido '+Math.abs(dias)+'d':dias===0?'Hoje':'Em '+dias+'d';
+      var wppBtn=al.whatsapp?'<button class="btn btn-w btn-xs" data-wpp="'+esc(al.whatsapp)+'" data-nome="'+esc(al.nome||'')+'" data-tipo="'+esc(c.tipo_curso||'')+'" data-dias="'+dias+'" onclick="avisarRenov(this)">📱 Avisar</button>':'—';
       html+='<tr><td><strong>'+esc(al.nome||'—')+'</strong></td><td><span class="chip">'+esc(c.tipo_curso||'—')+'</span></td><td style="font-size:11px">'+fmtD(c.data_vencimento)+'</td><td><span class="chip '+cls+'">'+label+'</span></td><td>'+wppBtn+'</td></tr>';
     });
     html+='</tbody></table></div>';
     rc.innerHTML=html;
-  }catch(err){console.error('relRenovacao:',err);rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'</div>';}
+  }catch(err){rc.innerHTML='<div class="alert">❌ '+esc(err.message)+'</div>';console.error(err);}
 }
+
 function avisarRenov(btn){
-  const wpp=btn.dataset.wpp,nome=btn.dataset.nome,tipo=btn.dataset.tipo,dias=parseInt(btn.dataset.dias);
-  const msg='Olá *'+nome+'*! Seu certificado *'+tipo+'* '+(dias<0?'venceu há '+Math.abs(dias)+' dia(s)':'vence em '+dias+' dia(s)')+'. Entre em contato para renovar! 🏔️';
+  var wpp=btn.dataset.wpp,nome=btn.dataset.nome,tipo=btn.dataset.tipo,dias=parseInt(btn.dataset.dias);
+  var msg='Olá *'+nome+'*! Seu certificado *'+tipo+'* '+(dias<0?'venceu há '+Math.abs(dias)+' dia(s)':'vence em '+dias+' dia(s)')+'. Entre em contato para renovar! 🏔️';
   window.open(wppUrl(wpp,msg),'_blank');
 }
 
 async function relDespesas(){
-  const rc=$('rel-content');if(!rc)return;
-  rc.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div>Carregando...</div></div>';
+  var rc=$('rel-content');if(!rc)return;
+  rc.innerHTML='<div style="color:var(--t2);text-align:center;padding:40px">⏳ Carregando...</div>';
   try{
-    const{data,error}=await sb.from('despesas').select('*,turmas(nome)').order('data',{ascending:false});
-    if(error){
-      if(error.message.includes('does not exist')||error.message.includes('relation')){
+    var r=await sb.from('despesas').select('data,categoria,descricao,valor,responsavel,turmas(nome)').order('data',{ascending:false});
+    if(r.error){
+      if(r.error.message.includes('does not exist')||r.error.message.includes('relation')){
         rc.innerHTML='<div class="alert">⚠️ Tabela "despesas" não existe ainda.<br><button class="btn btn-p btn-sm" style="margin-top:8px" onclick="mostrarSQL()">📋 Ver SQL para criar</button></div>';
         return;
       }
-      throw error;
+      throw new Error(r.error.message);
     }
-    const desps=data||[];
-    const total=desps.reduce((s,d)=>s+(d.valor||0),0);
-    const cats={};desps.forEach(d=>{cats[d.categoria]=(cats[d.categoria]||0)+(d.valor||0);});
-    const topCat=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
-    let html='<div class="sec-hdr"><div class="sec-title">📉 Despesas</div><div style="font-size:14px;font-weight:700;color:var(--red)">Total: '+fmt(total)+'</div></div>';
+    var desps=r.data||[];
+    var total=desps.reduce(function(s,d){return s+(d.valor||0);},0);
+    var cats={};desps.forEach(function(d){cats[d.categoria]=(cats[d.categoria]||0)+(d.valor||0);});
+    var html='<div class="sec-hdr"><div class="sec-title">📉 Despesas</div><div style="font-size:14px;font-weight:700;color:var(--red)">Total: '+fmt(total)+'</div></div>';
     if(!desps.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">📉</div><div>Nenhuma despesa</div></div>';return;}
-    if(topCat.length){html+='<div class="stats-grid" style="margin-bottom:20px">';topCat.slice(0,4).forEach(function(x){html+='<div class="stat-card red"><div class="sc-label">'+esc(x[0])+'</div><div class="sc-val" style="font-size:18px;color:var(--red)">'+fmt(x[1])+'</div></div>';});html+='</div>';}
+    // Top categorias
+    var topCats=Object.entries(cats).sort(function(a,b){return b[1]-a[1];}).slice(0,4);
+    if(topCats.length){
+      html+='<div class="stats-grid" style="margin-bottom:20px">';
+      topCats.forEach(function(e){
+        html+='<div class="stat-card red"><div class="sc-label">'+esc(e[0])+'</div><div class="sc-val" style="font-size:17px;color:var(--red)">'+fmt(e[1])+'</div></div>';
+      });
+      html+='</div>';
+    }
+    var catIco={Comissão:'💼',Instrutor:'👨‍🏫','Café da Manhã':'☕',Material:'📦',Transporte:'🚗',Hospedagem:'🏨',Aluguel:'🏢',Equipamento:'🔧',Outros:'📌'};
     html+='<div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Responsável</th><th>Turma</th></tr></thead><tbody>';
-    const catIco={Comissão:'💼',Instrutor:'👨‍🏫','Café da Manhã':'☕',Material:'📦',Transporte:'🚗',Hospedagem:'🏨',Aluguel:'🏢',Equipamento:'🔧',Outros:'📌'};
-    desps.forEach(function(d){html+='<tr><td style="font-size:11px">'+fmtD(d.data)+'</td><td><span class="chip">'+(catIco[d.categoria]||'📌')+' '+esc(d.categoria||'—')+'</span></td><td style="font-size:12px">'+esc(d.descricao||'—')+'</td><td style="font-weight:700;color:var(--red)">'+fmt(d.valor)+'</td><td style="font-size:11px">'+esc(d.responsavel||'—')+'</td><td style="font-size:11px">'+esc((d.turmas&&d.turmas.nome)||'Geral')+'</td></tr>';});
+    desps.forEach(function(d){
+      html+='<tr><td style="font-size:11px">'+fmtD(d.data)+'</td><td><span class="chip">'+(catIco[d.categoria]||'📌')+' '+esc(d.categoria||'—')+'</span></td><td style="font-size:12px">'+esc(d.descricao||'—')+'</td><td style="font-weight:700;color:var(--red)">'+fmt(d.valor)+'</td><td style="font-size:11px">'+esc(d.responsavel||'—')+'</td><td style="font-size:11px">'+esc((d.turmas&&d.turmas.nome)||'Geral')+'</td></tr>';
+    });
     html+='</tbody></table></div>';
     rc.innerHTML=html;
-  }catch(err){console.error('relDespesas:',err);rc.innerHTML='<div class="alert">❌ Erro: '+esc(err.message||String(err))+'</div>';}
+  }catch(err){rc.innerHTML='<div class="alert">❌ '+esc(err.message)+'</div>';console.error(err);}
 }
 
 function copiarSQL(){
