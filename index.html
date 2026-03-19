@@ -567,100 +567,36 @@ textarea.inp{min-height:80px;resize:vertical;line-height:1.5}
             <div class="sec-title">📊 KPIs & Aprovação</div>
             <div class="ml"><button class="btn btn-g btn-sm" onclick="loadKPIs()">↺ Atualizar</button></div>
           </div>
-
-          <!-- KPI Cards Financeiros -->
-          <div class="box-title" style="margin-bottom:10px">💰 Financeiro</div>
-          <div class="stats-grid" id="kpi-fin-stats" style="margin-bottom:24px"></div>
-
-          <!-- KPI Cards Operacionais -->
-          <div class="box-title" style="margin-bottom:10px">📋 Operacional</div>
-          <div class="stats-grid" id="kpi-op-stats" style="margin-bottom:24px"></div>
-
-          <!-- KPI Cards Certificações -->
-          <div class="box-title" style="margin-bottom:10px">🏆 Certificações & Aprovação</div>
-          <div class="stats-grid" id="kpi-cert-stats" style="margin-bottom:24px"></div>
-
-          <!-- Gráficos -->
-          <div class="two-col" style="margin-bottom:20px">
-            <div class="box">
-              <div class="box-title">📈 Receita por Mês (Chart.js)</div>
-              <canvas id="kpi-chart-receita" height="220"></canvas>
-            </div>
-            <div class="box">
-              <div class="box-title">📊 Aprovação por Curso (ApexCharts)</div>
-              <div id="kpi-apex-aprov" style="min-height:220px"></div>
-            </div>
-          </div>
-
-          <!-- Tabelas -->
-          <div class="two-col">
-            <div class="box">
-              <div class="box-title">🏆 Taxa de Aprovação por Curso</div>
-              <div class="tbl-wrap">
-                <table>
-                  <thead><tr><th>Curso</th><th>Total</th><th>Aprovados</th><th>Reprovados</th><th>Taxa</th></tr></thead>
-                  <tbody id="tb-kpi-curso"></tbody>
-                </table>
-              </div>
-            </div>
-            <div class="box">
-              <div class="box-title">🔄 Renovações Próximas (90 dias)</div>
-              <div class="tbl-wrap">
-                <table>
-                  <thead><tr><th>Aluno</th><th>Tipo</th><th>Vencimento</th><th>Situação</th></tr></thead>
-                  <tbody id="tb-kpi-renov"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Receita por Turma -->
-          <div class="box" style="margin-top:20px">
-            <div class="box-title">💵 Receita por Turma</div>
-            <div class="tbl-wrap">
-              <table>
-                <thead><tr><th>Turma</th><th>Curso</th><th>Confirmados</th><th>Treinamento</th><th>IRATA BR</th><th>Total</th><th>% da Receita</th></tr></thead>
-                <tbody id="tb-kpi-turma"></tbody>
-              </table>
-            </div>
-          </div>
+          <div id="kpi-load" style="text-align:center;padding:60px;color:var(--t2)">⏳ Carregando KPIs...</div>
+          <div id="kpi-content" style="display:none"></div>
         </div>
-
         <!-- ═══ RELATÓRIOS ═══ -->
         <div id="p-relatorios" class="panel">
           <div class="sec-hdr">
             <div class="sec-title">📄 Relatórios</div>
             <div class="ml row gap">
-              <button class="btn btn-g btn-sm no-print" onclick="exportarExcel()">📊 Excel</button>
-              <button class="btn btn-g btn-sm no-print" onclick="exportarPDF()">📄 PDF</button>
-              <button class="btn btn-p btn-sm no-print" onclick="imprimirRelatorio()">🖨️ Imprimir</button>
+              <button class="btn btn-g btn-sm no-print" onclick="exportarExcelAtivo()">📊 Excel</button>
+              <button class="btn btn-p btn-sm no-print" onclick="exportarPDFAtivo()">📄 PDF</button>
             </div>
           </div>
           <div class="rel-tabs">
-            <div class="rtab on" onclick="showRelTab('financeiro-rel')">💰 Financeiro</div>
-            <div class="rtab" onclick="showRelTab('contas')">📋 Contas a Receber</div>
-            <div class="rtab" onclick="showRelTab('aprovacao')">🏆 Aprovação</div>
-            <div class="rtab" onclick="showRelTab('renovacao')">🔄 Renovações</div>
-            <div class="rtab" onclick="showRelTab('receita')">📈 Receita/Turma</div>
-            <div class="rtab" onclick="showRelTab('nfs')">🧾 Notas Fiscais</div>
-            <div class="rtab" onclick="showRelTab('despesas-rel')">📉 Despesas</div>
+            <div class="rtab on"  onclick="showRelTab('financeiro-rel')">💰 Financeiro</div>
+            <div class="rtab"     onclick="showRelTab('aprovacao')">🏆 Aprovação</div>
+            <div class="rtab"     onclick="showRelTab('renovacao')">🔄 Renovações</div>
+            <div class="rtab"     onclick="showRelTab('receita')">📈 Receita/Turma</div>
+            <div class="rtab"     onclick="showRelTab('contas')">📋 Contas</div>
+            <div class="rtab"     onclick="showRelTab('nfs')">🧾 Notas Fiscais</div>
+            <div class="rtab"     onclick="showRelTab('despesas-rel')">📉 Despesas</div>
           </div>
-          <div id="rel-content"></div>
+          <!-- loading + content per tab -->
+          <div id="rel-fin-load"  style="text-align:center;padding:60px;color:var(--t2)">⏳ Carregando...</div>
+          <div id="rel-fin-content"  style="display:none"></div>
+          <div id="rel-apr-load"  style="display:none;text-align:center;padding:60px;color:var(--t2)">⏳ Carregando...</div>
+          <div id="rel-apr-content"  style="display:none"></div>
+          <div id="rel-ren-load"  style="display:none;text-align:center;padding:60px;color:var(--t2)">⏳ Carregando...</div>
+          <div id="rel-ren-content"  style="display:none"></div>
+          <div id="rel-content" style="display:none"></div>
         </div>
-
-        <!-- ═══ CALENDÁRIO ═══ -->
-        <div id="p-calendario" class="panel">
-          <div class="sec-hdr">
-            <div class="sec-title">📅 Calendário de Turmas</div>
-            <div class="ml row gap">
-              <button class="btn btn-g btn-sm" onclick="loadCalendario()">↺ Atualizar</button>
-            </div>
-          </div>
-          <div class="box" style="padding:16px">
-            <div id="alpiend-calendar" style="min-height:500px"></div>
-          </div>
-        </div>
-
       </div><!-- /content -->
     </div><!-- /main -->
   </div><!-- /layout -->
@@ -1499,7 +1435,7 @@ function showPanel(id){
   else if(id==='leads')loadLeads();
   else if(id==='financeiro'){showFinTab('receitas');loadFin();}
   else if(id==='kpis')loadKPIs();
-  else if(id==='relatorios')showRelTab('financeiro-rel');
+  else if(id==='relatorios'){showRelTab('financeiro-rel');}
   else if(id==='calendario')loadCalendario();
 }
 
@@ -1549,13 +1485,34 @@ function showRelTab(id){
     const fn=b.getAttribute('onclick');
     if(fn)b.classList.toggle('on',fn.includes("'"+id+"'"));
   });
-  if(id==='financeiro-rel')relFinanceiro();
-  else if(id==='contas')relContas();
-  else if(id==='nfs')relNFs();
-  else if(id==='receita')relReceita();
-  else if(id==='aprovacao')relAprovacao();
-  else if(id==='renovacao')relRenovacao();
-  else if(id==='despesas-rel')relDespesas();
+  // Hide all rel panes
+  ['rel-fin-load','rel-fin-content','rel-apr-load','rel-apr-content',
+   'rel-ren-load','rel-ren-content','rel-content'].forEach(function(pid){
+    var el=document.getElementById(pid);if(el)el.style.display='none';
+  });
+  window._activeRelTab = id;
+  if(id==='financeiro-rel'){
+    showRelPane('rel-fin-load','rel-fin-content');
+    loadFinanceiro();
+  } else if(id==='aprovacao'){
+    showRelPane('rel-apr-load','rel-apr-content');
+    loadAprovacao();
+  } else if(id==='renovacao'){
+    showRelPane('rel-ren-load','rel-ren-content');
+    loadRenovacao();
+  } else {
+    var rc=document.getElementById('rel-content');
+    if(rc)rc.style.display='block';
+    if(id==='contas')relContas();
+    else if(id==='nfs')relNFs();
+    else if(id==='receita')relReceita();
+    else if(id==='despesas-rel')relDespesas();
+  }
+}
+function showRelPane(loadId, contentId){
+  var l=document.getElementById(loadId), c=document.getElementById(contentId);
+  if(l)l.style.display='block';
+  if(c)c.style.display='none';
 }
 function wppUrl(num,msg){const n=(num||'').replace(/\D/g,'');return'https://wa.me/'+(n.startsWith('55')?n:'55'+n)+'?text='+encodeURIComponent(msg);}
 
@@ -2523,332 +2480,337 @@ async function sbGet(table,params){
 }
 
 
-async function loadKPIs(){
-  var fs=document.getElementById('kpi-fin-stats');
-  var os=document.getElementById('kpi-op-stats');
-  var cs=document.getElementById('kpi-cert-stats');
-  var t1=document.getElementById('tb-kpi-curso');
-  var t2=document.getElementById('tb-kpi-renov');
-  var t3=document.getElementById('tb-kpi-turma');
-  var loading='<div style="color:var(--t2);padding:20px;text-align:center">⏳ Carregando...</div>';
-  if(fs)fs.innerHTML=loading;if(os)os.innerHTML=loading;if(cs)cs.innerHTML=loading;
-  if(t1)t1.innerHTML='<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--t2)">⏳</td></tr>';
-  if(t2)t2.innerHTML='<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--t2)">⏳</td></tr>';
-  if(t3)t3.innerHTML='<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--t2)">⏳</td></tr>';
+// ── FETCH HELPER (sem supabase-js) ─────────────────────────────
+async function get(table, params) {
+  try {
+    var r = await fetch(SB+'/rest/v1/'+table+'?'+(params||''), {headers:H});
+    var d = await r.json();
+    if (!r.ok) return [];
+    return Array.isArray(d) ? d : [];
+  } catch(e) { return []; }
+}
 
-  // Buscar dados via REST direto
-  var r1=await sbGet('matriculas','select=status,valor_pago,valor_certificacao,data_matricula,turma_id');
-  var r2=await sbGet('turmas','select=id,nome,curso,status,vagas');
-  var r3=await sbGet('certificacoes','select=tipo_curso,nota_aprovacao,data_vencimento,aluno_id,alunos(nome)');
-  var r4=await sbGet('despesas','select=valor,categoria');
-  var r5=await sbGet('leads','select=etapa,valor_estimado');
+// ── KPIs ────────────────────────────────────────────────────────
+async function loadKPIs() {
+  var mats = await get('matriculas','select=status,valor_pago,valor_certificacao,data_matricula,turma_id');
+  var desps = await get('despesas','select=valor,categoria');
+  var certs = await get('certificacoes','select=tipo_curso,nota_aprovacao,data_vencimento');
+  var leads = await get('leads','select=etapa,valor_estimado');
+  var turmas = await get('turmas','select=id,nome,status,vagas');
 
-  var mats=r1.data, turmas=r2.data, certs=r3.data, desps=r4.data, leads=r5.data;
+  var conf = mats.filter(m=>m.status==='Confirmado');
+  var receita = conf.reduce((s,m)=>s+(+m.valor_pago||0)+(+m.valor_certificacao||0),0);
+  var despTotal = desps.reduce((s,d)=>s+(+d.valor||0),0);
+  var margem = receita - despTotal;
+  var pend = mats.filter(m=>m.status==='Aguardando Pagamento');
+  var leadsAt = leads.filter(l=>l.etapa!=='Fechado'&&l.etapa!=='Perdido');
+  var pipeline = leadsAt.reduce((s,l)=>s+(+l.valor_estimado||0),0);
+  var aprov = certs.filter(c=>c.nota_aprovacao!=null&&+c.nota_aprovacao>=8.6).length;
+  var taxa = certs.length ? Math.round(aprov/certs.length*100) : 0;
+  var turmasAt = turmas.filter(t=>t.status==='Aberta'||t.status==='Em Andamento').length;
 
-  // Financeiro
-  var conf=mats.filter(function(m){return m.status==='Confirmado';});
-  var receita=conf.reduce(function(s,m){return s+(parseFloat(m.valor_pago)||0)+(parseFloat(m.valor_certificacao)||0);},0);
-  var despTotal=desps.reduce(function(s,d){return s+(parseFloat(d.valor)||0);},0);
-  var margem=receita-despTotal;
-  var tkMedio=conf.length?receita/conf.length:0;
-  var pend=mats.filter(function(m){return m.status==='Aguardando Pagamento';});
-  var valorPend=pend.reduce(function(s,m){return s+(parseFloat(m.valor_pago)||0)+(parseFloat(m.valor_certificacao)||0);},0);
-  var leadsAt=leads.filter(function(l){return l.etapa!=='Fechado'&&l.etapa!=='Perdido';});
-  var pipeline=leadsAt.reduce(function(s,l){return s+(parseFloat(l.valor_estimado)||0);},0);
+  var html = '';
+  html += '<div class="section"><div class="sec-title">💰 Financeiro</div>';
+  html += '<div class="card-grid">';
+  html += C('Receita Total', receita, conf.length+' confirmados', 'grn');
+  html += C('Total Despesas', despTotal, 'Registradas', 'red');
+  html += C('Margem Líquida', margem, (margem>=0?'▲ Positiva':'▼ Negativa'), margem>=0?'grn':'red');
+  html += C('Ticket Médio', conf.length?receita/conf.length:0, 'Por aluno', '');
+  html += C('A Receber', pend.reduce((s,m)=>s+(+m.valor_pago||0)+(+m.valor_certificacao||0),0), pend.length+' pendentes', '');
+  html += C('Pipeline Leads', pipeline, leadsAt.length+' leads', 'pur');
+  html += '</div></div>';
 
-  function C(lbl,val,sub,cor){
-    var v=(typeof val==='number')?fmt(val):String(val);
-    return '<div class="stat-card"><div class="sc-label">'+lbl+'</div>'+
-      '<div class="sc-val" style="font-size:20px'+(cor?';color:'+cor:'')+'">'+(v==='NaN'?'—':v)+'</div>'+
-      '<div class="sc-sub">'+sub+'</div></div>';
-  }
+  html += '<div class="section"><div class="sec-title">📋 Operacional</div>';
+  html += '<div class="card-grid">';
+  html += C('Total Matrículas', mats.length, 'Todas', '');
+  html += C('Confirmadas', conf.length, 'Pagas', 'grn');
+  var cancel = mats.filter(m=>m.status==='Cancelado'||m.status==='Desistente').length;
+  html += C('Cancelamentos', cancel, mats.length?Math.round(cancel/mats.length*100)+'%':'0%', cancel>0?'red':'');
+  html += C('Turmas Ativas', turmasAt, 'Abertas/andamento', '');
+  html += C('Leads Ativos', leadsAt.length, 'Em negociação', 'pur');
+  html += C('Total Turmas', turmas.length, 'Cadastradas', '');
+  html += '</div></div>';
 
-  if(fs)fs.innerHTML=
-    C('💵 Receita Total',receita,'Confirmados','')+
-    C('📉 Despesas',despTotal,'Registradas','var(--red)')+
-    C('📊 Margem Líquida',margem,margem>=0?'✅ Positiva':'⚠️ Negativa',margem>=0?'var(--grn)':'var(--red)')+
-    C('🎯 Ticket Médio',tkMedio,'Por aluno','')+
-    C('⏳ A Receber',valorPend,pend.length+' pendentes','')+
-    C('🌱 Pipeline',pipeline,leadsAt.length+' leads','var(--pur)');
-
-  // Operacional
-  var turmasAt=turmas.filter(function(t){return t.status==='Aberta'||t.status==='Em Andamento';});
-  var cancelados=mats.filter(function(m){return m.status==='Cancelado'||m.status==='Desistente';}).length;
-  if(os)os.innerHTML=
-    C('📋 Matrículas',mats.length,'Total','')+
-    C('✅ Confirmadas',conf.length,'Pagas','var(--grn)')+
-    C('❌ Cancelamentos',cancelados,mats.length?Math.round(cancelados/mats.length*100)+'%':'0%',cancelados>0?'var(--red)':'')+
-    C('🗓️ Turmas Ativas',turmasAt.length,'Abertas/andamento','')+
-    C('🎯 Leads Ativos',leadsAt.length,'Em negociação','')+
-    C('📦 Total Turmas',turmas.length,'Cadastradas','');
-
-  // Certificações
-  var aprov=certs.filter(function(c){return c.nota_aprovacao!=null&&parseFloat(c.nota_aprovacao)>=8.6;}).length;
-  var reprov=certs.filter(function(c){return c.nota_aprovacao!=null&&parseFloat(c.nota_aprovacao)<8.6;}).length;
-  var taxa=certs.length?Math.round(aprov/certs.length*100):0;
+  html += '<div class="section"><div class="sec-title">🏆 Certificações & Aprovação</div>';
+  html += '<div class="card-grid">';
+  html += C('Certificados', certs.length, 'Total emitidos', '');
+  html += C('Aprovados', aprov, taxa+'% taxa', 'grn');
+  var reprov = certs.filter(c=>c.nota_aprovacao!=null&&+c.nota_aprovacao<8.6).length;
+  html += C('Reprovados', reprov, reprov>0?'Atenção':'OK', reprov>0?'red':'grn');
+  html += C('Taxa Aprovação', taxa+'%', 'Meta ≥ 80%', taxa>=80?'grn':taxa>=60?'':'red');
+  var notas = certs.filter(c=>c.nota_aprovacao!=null);
+  var media = notas.length ? (notas.reduce((s,c)=>s+(+c.nota_aprovacao),0)/notas.length).toFixed(1) : '—';
+  html += C('Nota Média', media, 'Aprovação ≥ 8.6', +media>=8.6?'grn':'');
   var now=new Date(),d90=new Date();d90.setDate(now.getDate()+90);
-  var venc=certs.filter(function(c){if(!c.data_vencimento)return false;var v=new Date(c.data_vencimento);return v>=now&&v<=d90;}).length;
-  var notas=certs.filter(function(c){return c.nota_aprovacao!=null;});
-  var media=notas.length?notas.reduce(function(s,c){return s+parseFloat(c.nota_aprovacao);},0)/notas.length:0;
-  if(cs)cs.innerHTML=
-    C('🏆 Certificados',certs.length,'Emitidos','')+
-    C('✅ Aprovados',aprov,taxa+'% taxa','var(--grn)')+
-    C('❌ Reprovados',reprov,reprov>0?'Atenção':'',reprov?'var(--red)':'')+
-    C('📊 Taxa Aprovação',taxa+'%','Meta ≥ 80%',taxa>=80?'var(--grn)':taxa>=60?'var(--orn)':'var(--red)')+
-    C('📝 Nota Média',media>0?media.toFixed(1):'—','Aprovação ≥ 8.6',media>=8.6?'var(--grn)':'')+
-    C('⚠️ Vencendo',venc,'Próximos 90d',venc>0?'var(--orn)':'');
+  var venc = certs.filter(c=>c.data_vencimento&&new Date(c.data_vencimento)<=d90&&new Date(c.data_vencimento)>=now).length;
+  html += C('Vencendo', venc, 'Próximos 90 dias', venc>0?'red':'grn');
+  html += '</div></div>';
 
-  // Tabela aprovação por curso
+  document.getElementById('kpi-load').style.display='none';
+  document.getElementById('kpi-content').style.display='block';
+  document.getElementById('kpi-content').innerHTML=html;
+  document.getElementById('status').textContent='✅ Conectado';
+}
+
+// ── RELATÓRIO: APROVAÇÃO ────────────────────────────────────────
+async function loadAprovacao() {
+  var certs = await get('certificacoes','select=tipo_curso,numero_certificado,data_emissao,data_vencimento,nota_aprovacao,status,alunos(nome)&order=data_emissao.desc');
+  var total = certs.length;
+  var aprov = certs.filter(c=>c.nota_aprovacao!=null&&+c.nota_aprovacao>=8.6).length;
+  var taxa = total ? Math.round(aprov/total*100) : 0;
+  var cor = taxa>=80?'#10b981':taxa>=60?'#f97316':'#f43f5e';
+
+  var html = '';
+  html += '<div class="actions">';
+  html += '<button class="btn btn-p" onclick="exportarPDFAprovacao()">📄 Exportar PDF</button>';
+  html += '<button class="btn btn-g" onclick="exportarExcelAprovacao()">📊 Exportar Excel</button>';
+  html += '</div>';
+
+  // Barra visual de taxa
+  html += '<div class="two" style="margin-bottom:24px">';
+  html += '<div>';
+  html += '<div class="section"><div class="sec-title">📊 Índice Geral de Aprovação</div>';
+  html += '<div class="card-grid">';
+  html += C('Total Certificados', total, 'Emitidos', '');
+  html += C('Aprovados', aprov, taxa+'% taxa', 'grn');
+  html += C('Reprovados', total-aprov, '', (total-aprov)>0?'red':'');
+  html += '</div>';
+  html += '<div style="margin-top:16px"><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;color:#7a8fa8"><span>Taxa de Aprovação</span><span style="font-weight:700;color:'+cor+'">'+taxa+'%</span></div>';
+  html += '<div class="bar"><div class="bar-fill" style="width:'+taxa+'%;background:'+cor+'"></div></div></div></div>';
+  html += '</div>';
+  html += '<div class="big-pct" style="border-color:'+cor+';color:'+cor+'">'+taxa+'%<div style="font-size:14px;color:#7a8fa8;font-weight:400;margin-top:4px">Taxa de Aprovação</div></div>';
+  html += '</div>';
+
+  // Por curso
   var bc={};
-  certs.forEach(function(c){
-    var k=c.tipo_curso||'Outros';
-    if(!bc[k])bc[k]={t:0,a:0};
-    bc[k].t++;
-    if(c.nota_aprovacao!=null&&parseFloat(c.nota_aprovacao)>=8.6)bc[k].a++;
+  certs.forEach(c=>{var k=c.tipo_curso||'Outros';if(!bc[k])bc[k]={t:0,a:0};bc[k].t++;if(c.nota_aprovacao!=null&&+c.nota_aprovacao>=8.6)bc[k].a++;});
+  html += '<div class="section"><div class="sec-title">📋 Por Tipo de Curso</div>';
+  html += '<table id="tb-aprov-curso"><thead><tr><th>Curso</th><th>Total</th><th>Aprovados</th><th>Reprovados</th><th>Taxa</th></tr></thead><tbody>';
+  Object.entries(bc).forEach(([k,d])=>{
+    var tx=d.t?Math.round(d.a/d.t*100):0,c2=tx>=80?'grn':'red';
+    html+='<tr><td><strong>'+esc(k)+'</strong></td><td style="text-align:center">'+d.t+'</td><td style="text-align:center;color:#10b981;font-weight:700">'+d.a+'</td><td style="text-align:center;color:#f43f5e">'+(d.t-d.a)+'</td>';
+    html+='<td><div class="bar-wrap"><div class="bar"><div class="bar-fill '+c2+'" style="width:'+tx+'%"></div></div><span style="font-weight:700;color:'+(tx>=80?'#10b981':tx>=60?'#f97316':'#f43f5e')+'">'+tx+'%</span></div></td></tr>';
   });
-  if(t1){
-    var rows=Object.keys(bc).map(function(k){
-      var d=bc[k],tx=d.t?Math.round(d.a/d.t*100):0,cor=tx>=80?'var(--grn)':tx>=60?'var(--orn)':'var(--red)';
-      return '<tr><td><strong>'+esc(k)+'</strong></td><td style="text-align:center">'+d.t+'</td>'+
-        '<td style="text-align:center;color:var(--grn);font-weight:700">'+d.a+'</td>'+
-        '<td style="text-align:center;color:var(--red)">'+(d.t-d.a)+'</td>'+
-        '<td><div style="display:flex;align-items:center;gap:8px">'+
-        '<div style="flex:1;height:6px;background:var(--bg4);border-radius:99px">'+
-        '<div style="width:'+tx+'%;height:100%;background:'+cor+';border-radius:99px"></div></div>'+
-        '<span style="font-weight:700;color:'+cor+'">'+tx+'%</span></div></td></tr>';
+  html += '</tbody></table></div>';
+
+  // Tabela completa
+  if (certs.length) {
+    html += '<div class="section"><div class="sec-title">📋 Detalhe por Aluno ('+(total)+')</div>';
+    html += '<table id="tb-aprov-detalhe"><thead><tr><th>Aluno</th><th>Curso</th><th>Certificado</th><th>Emissão</th><th>Vencimento</th><th>Nota</th><th>Resultado</th></tr></thead><tbody>';
+    var now2=new Date();
+    certs.forEach(c=>{
+      var nota=c.nota_aprovacao!=null?+c.nota_aprovacao:null;
+      var ok=nota!=null&&nota>=8.6;
+      var vd=c.data_vencimento?new Date(c.data_vencimento):null;
+      var dias=vd?Math.ceil((vd-now2)/864e5):null;
+      var vs=vd?'<span style="color:'+(dias<0?'#f43f5e':dias<=90?'#f97316':'#10b981')+'">'+fmtD(c.data_vencimento)+(dias!=null?' ('+Math.abs(dias)+'d)':'')+'</span>':'—';
+      html+='<tr><td><strong>'+esc((c.alunos&&c.alunos.nome)||'—')+'</strong></td><td><span class="chip bz">'+esc(c.tipo_curso||'—')+'</span></td><td style="font-size:11px">'+esc(c.numero_certificado||'—')+'</td><td style="font-size:11px">'+fmtD(c.data_emissao)+'</td><td style="font-size:11px">'+vs+'</td><td>'+(nota!=null?'<span style="font-size:16px;font-weight:800;color:'+(ok?'#10b981':'#f43f5e')+'">'+nota.toFixed(1)+'</span>':'—')+'</td><td><span class="chip '+(ok?'bg':'br')+'">'+(ok?'✅ Aprovado':'❌ Reprovado')+'</span></td></tr>';
     });
-    t1.innerHTML=rows.length?rows.join(''):'<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--t2)">Nenhuma certificação cadastrada</td></tr>';
+    html += '</tbody></table></div>';
   }
 
-  // Tabela renovações
-  if(t2){
-    var renovs=certs.filter(function(c){if(!c.data_vencimento)return false;return new Date(c.data_vencimento)<=d90;})
-      .sort(function(a,b){return new Date(a.data_vencimento)-new Date(b.data_vencimento)});
-    t2.innerHTML=renovs.length?renovs.map(function(c){
+  var _al=document.getElementById('rel-apr-load'),_ac=document.getElementById('rel-apr-content');if(_al)_al.style.display='none';if(_ac){_ac.style.display='block';_ac.innerHTML=html;}
+}
+
+// ── RELATÓRIO: FINANCEIRO ───────────────────────────────────────
+async function loadFinanceiro() {
+  var mats = await get('matriculas','select=status,valor_pago,valor_certificacao,forma_pagamento,data_matricula,alunos(nome,empresa),turmas(nome,curso)&order=data_matricula.desc');
+  var desps = await get('despesas','select=valor,categoria,data,descricao,responsavel&order=data.desc');
+
+  var conf = mats.filter(m=>m.status==='Confirmado');
+  var receita = conf.reduce((s,m)=>s+(+m.valor_pago||0)+(+m.valor_certificacao||0),0);
+  var despTotal = desps.reduce((s,d)=>s+(+d.valor||0),0);
+  var margem = receita-despTotal;
+  var txM = receita ? Math.round(margem/receita*100) : 0;
+  var pend = mats.filter(m=>m.status==='Aguardando Pagamento');
+  var treinT=conf.reduce((s,m)=>s+(+m.valor_pago||0),0);
+  var irataT=conf.reduce((s,m)=>s+(+m.valor_certificacao||0),0);
+  var cats={};desps.forEach(d=>{cats[d.categoria]=(cats[d.categoria]||0)+(+d.valor||0);});
+  var byFpag={};conf.forEach(m=>{var k=m.forma_pagamento||'N/A';byFpag[k]=(byFpag[k]||0)+(+m.valor_pago||0)+(+m.valor_certificacao||0);});
+  var stCls={Confirmado:'bg',Cancelado:'br',Desistente:'br','Aguardando Pagamento':'bo','Documentação Pendente':'bz'};
+
+  var html='';
+  html+='<div class="actions"><button class="btn btn-p" onclick="exportarPDFFinanceiro()">📄 PDF</button><button class="btn btn-g" onclick="exportarExcelFinanceiro()">📊 Excel</button></div>';
+  html+='<div class="card-grid" style="margin-bottom:24px">';
+  html+=C('Receita Total',receita,'Confirmados','grn')+C('Despesas',despTotal,'Registradas','red')+C('Margem',margem,(txM>=0?'▲ ':'▼ ')+Math.abs(txM)+'%',margem>=0?'grn':'red')+C('Ticket Médio',conf.length?receita/conf.length:0,'Por aluno','')+C('A Receber',pend.reduce((s,m)=>s+(+m.valor_pago||0)+(+m.valor_certificacao||0),0),pend.length+' pendentes','');
+  html+='</div>';
+  html+='<div class="two" style="margin-bottom:24px">';
+  html+='<div class="section"><div class="sec-title">📋 DRE</div><table class="dre-table"><tbody>';
+  html+='<tr><td style="color:#10b981">✅ Treinamentos</td><td style="text-align:right;color:#10b981">'+fmt(treinT)+'</td><td style="text-align:right;color:#7a8fa8;font-size:11px">'+Math.round(receita?treinT/receita*100:0)+'%</td></tr>';
+  html+='<tr><td style="color:#10b981">✅ IRATA</td><td style="text-align:right;color:#10b981">'+fmt(irataT)+'</td><td style="text-align:right;color:#7a8fa8;font-size:11px">'+Math.round(receita?irataT/receita*100:0)+'%</td></tr>';
+  html+='<tr class="dre-sep dre-total"><td>= Receita Bruta</td><td style="text-align:right;color:#10b981">'+fmt(receita)+'</td><td></td></tr>';
+  Object.entries(cats).sort((a,b)=>b[1]-a[1]).forEach(([c,v])=>{html+='<tr><td style="color:#f43f5e">(-) '+esc(c)+'</td><td style="text-align:right;color:#f43f5e">('+fmt(v)+')</td><td style="text-align:right;color:#7a8fa8;font-size:11px">'+Math.round(receita?v/receita*100:0)+'%</td></tr>';});
+  html+='<tr class="dre-sep dre-total" style="color:#f43f5e"><td>(-) Total Despesas</td><td style="text-align:right">('+fmt(despTotal)+')</td><td></td></tr>';
+  html+='<tr class="dre-sep dre-total"><td>= RESULTADO</td><td style="text-align:right;color:'+(margem>=0?'#10b981':'#f43f5e')+'">'+fmt(margem)+'</td><td style="text-align:right;color:'+(margem>=0?'#10b981':'#f43f5e')+'">'+txM+'%</td></tr>';
+  html+='</tbody></table></div>';
+  html+='<div class="section"><div class="sec-title">💳 Por Pagamento</div><table><thead><tr><th>Forma</th><th style="text-align:right">Valor</th><th style="text-align:right">%</th></tr></thead><tbody>';
+  Object.entries(byFpag).sort((a,b)=>b[1]-a[1]).forEach(([fp,v])=>{html+='<tr><td>'+esc(fp)+'</td><td style="text-align:right;color:#10b981;font-weight:600">'+fmt(v)+'</td><td style="text-align:right;color:#7a8fa8">'+Math.round(receita?v/receita*100:0)+'%</td></tr>';});
+  if(!Object.keys(byFpag).length)html+='<tr><td colspan="3" style="text-align:center;color:#7a8fa8;padding:16px">Sem dados</td></tr>';
+  html+='</tbody></table></div>';
+  html+='</div>';
+  html+='<div class="section"><div class="sec-title">📑 Extrato de Inscrições ('+mats.length+')</div>';
+  html+='<table id="tb-extrato"><thead><tr><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data</th><th>Treino</th><th>IRATA</th><th>Total</th><th>Pagamento</th><th>Status</th></tr></thead><tbody>';
+  mats.forEach(m=>{var tot=(+m.valor_pago||0)+(+m.valor_certificacao||0),sc=stCls[m.status]||'bz';html+='<tr><td><strong>'+esc((m.alunos&&m.alunos.nome)||'—')+'</strong></td><td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td><td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_matricula)+'</td><td>'+fmt(+m.valor_pago||0)+'</td><td>'+fmt(+m.valor_certificacao||0)+'</td><td style="font-weight:700;color:#10b981">'+fmt(tot)+'</td><td style="font-size:11px">'+esc(m.forma_pagamento||'—')+'</td><td><span class="chip '+sc+'">'+esc(m.status||'—')+'</span></td></tr>';});
+  if(!mats.length)html+='<tr><td colspan="9" style="text-align:center;padding:20px;color:#7a8fa8">Nenhuma inscrição cadastrada</td></tr>';
+  html+='</tbody></table></div>';
+
+  var _fl=document.getElementById('rel-fin-load'),_fc=document.getElementById('rel-fin-content');if(_fl)_fl.style.display='none';if(_fc){_fc.style.display='block';_fc.innerHTML=html;}
+}
+
+// ── RELATÓRIO: TURMAS ───────────────────────────────────────────
+async function loadTurmas() {
+  var turmas = await get('turmas','select=id,nome,curso,status,vagas,data_inicio,data_fim&order=nome.asc');
+  var mats = await get('matriculas','select=turma_id,status,valor_pago,valor_certificacao');
+  var totRec=0;
+  var rows=turmas.map(t=>{
+    var tm=mats.filter(m=>m.turma_id===t.id&&m.status==='Confirmado');
+    var trein=tm.reduce((s,m)=>s+(+m.valor_pago||0),0);
+    var irata=tm.reduce((s,m)=>s+(+m.valor_certificacao||0),0);
+    totRec+=trein+irata;
+    return{t,n:tm.length,trein,irata,total:trein+irata};
+  }).sort((a,b)=>b.total-a.total);
+  var stCls={Aberta:'bg','Em Andamento':'bo',Encerrada:'bz'};
+  var html='<div class="section"><div class="sec-title">📈 Receita por Turma — Total: '+fmt(totRec)+'</div>';
+  html+='<table id="tb-turmas"><thead><tr><th>Turma</th><th>Curso</th><th>Status</th><th>Início</th><th>Fim</th><th style="text-align:center">Alunos</th><th>Treino</th><th>IRATA</th><th style="font-weight:700">Total</th></tr></thead><tbody>';
+  rows.forEach(r=>{var sc=stCls[r.t.status]||'bz';html+='<tr><td><strong>'+esc(r.t.nome||'—')+'</strong></td><td style="font-size:11px;color:#f59e0b">'+esc(r.t.curso||'—')+'</td><td><span class="chip '+sc+'">'+esc(r.t.status||'—')+'</span></td><td style="font-size:11px">'+fmtD(r.t.data_inicio)+'</td><td style="font-size:11px">'+fmtD(r.t.data_fim)+'</td><td style="text-align:center">'+r.n+'</td><td>'+fmt(r.trein)+'</td><td>'+fmt(r.irata)+'</td><td style="font-weight:700;color:#10b981">'+fmt(r.total)+'</td></tr>';});
+  if(!rows.length)html+='<tr><td colspan="9" style="text-align:center;padding:20px;color:#7a8fa8">Nenhuma turma cadastrada</td></tr>';
+  html+='</tbody></table></div>';
+  document.getElementById('tur-load').style.display='none';
+  document.getElementById('tur-content').style.display='block';
+  document.getElementById('tur-content').innerHTML=html;
+}
+
+// ── RELATÓRIO: RENOVAÇÕES ───────────────────────────────────────
+async function loadRenovacao() {
+  var certs = await get('certificacoes','select=tipo_curso,data_vencimento,alunos(nome,whatsapp)&order=data_vencimento.asc');
+  var now=new Date(),d90=new Date();d90.setDate(now.getDate()+90);
+  var venc=certs.filter(c=>c.data_vencimento&&new Date(c.data_vencimento)<=d90);
+  var html='';
+  if(!venc.length){
+    html='<div style="text-align:center;padding:60px;color:#10b981;font-size:18px">🎉 Nenhuma renovação pendente nos próximos 90 dias!</div>';
+  }else{
+    html='<div class="section"><div class="sec-title">⚠️ '+venc.length+' Certificado(s) vencem em até 90 dias</div>';
+    html+='<table><thead><tr><th>Aluno</th><th>Tipo</th><th>Vencimento</th><th>Situação</th><th>WhatsApp</th></tr></thead><tbody>';
+    venc.forEach(c=>{
       var v=new Date(c.data_vencimento),dias=Math.ceil((v-now)/864e5);
       var cls=dias<0?'br':dias<=30?'br':'bo';
       var lbl=dias<0?'Vencido '+Math.abs(dias)+'d':dias===0?'Hoje':'Em '+dias+'d';
-      var nome=(c.alunos&&c.alunos.nome)||'—';
-      return '<tr><td><strong>'+esc(nome)+'</strong></td><td><span class="chip">'+esc(c.tipo_curso||'—')+'</span></td>'+
-        '<td style="font-size:11px">'+fmtD(c.data_vencimento)+'</td><td><span class="chip '+cls+'">'+lbl+'</span></td></tr>';
-    }).join(''):'<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--t2)">✅ Sem renovações pendentes</td></tr>';
+      var al=c.alunos||{};
+      var msg='Olá *'+esc(al.nome||'')+'*! Seu certificado *'+esc(c.tipo_curso||'')+'* '+(dias<0?'venceu há '+Math.abs(dias)+' dia(s)':'vence em '+dias+' dia(s)')+'. Entre em contato para renovar! 🏔️';
+      var wpp=al.whatsapp?'<a href="https://wa.me/'+String(al.whatsapp).replace(/\D/g,'')+'?text='+encodeURIComponent(msg)+'" target="_blank" style="color:#10b981;text-decoration:none">📱 Avisar</a>':'—';
+      html+='<tr><td><strong>'+esc(al.nome||'—')+'</strong></td><td><span class="chip bz">'+esc(c.tipo_curso||'—')+'</span></td><td style="font-size:11px">'+fmtD(c.data_vencimento)+'</td><td><span class="chip '+cls+'">'+lbl+'</span></td><td>'+wpp+'</td></tr>';
+    });
+    html+='</tbody></table></div>';
   }
-
-  // Tabela receita por turma
-  if(t3&&turmas.length){
-    var totRec=0;
-    var trows=turmas.map(function(t){
-      var tm=mats.filter(function(m){return m.turma_id===t.id&&m.status==='Confirmado';});
-      var trein=tm.reduce(function(s,m){return s+(parseFloat(m.valor_pago)||0);},0);
-      var irata=tm.reduce(function(s,m){return s+(parseFloat(m.valor_certificacao)||0);},0);
-      totRec+=trein+irata;
-      return{t:t,n:tm.length,trein:trein,irata:irata,total:trein+irata};
-    }).filter(function(r){return r.total>0;}).sort(function(a,b){return b.total-a.total;});
-    t3.innerHTML=trows.length?trows.map(function(r){
-      var pct=totRec?Math.round(r.total/totRec*100):0;
-      return '<tr><td><strong>'+esc(r.t.nome||'—')+'</strong></td>'+
-        '<td style="font-size:11px;color:var(--acc)">'+esc(r.t.curso||'—')+'</td>'+
-        '<td style="text-align:center">'+r.n+'</td>'+
-        '<td>'+fmt(r.trein)+'</td><td>'+fmt(r.irata)+'</td>'+
-        '<td style="font-weight:700;color:var(--grn)">'+fmt(r.total)+'</td>'+
-        '<td><div style="display:flex;align-items:center;gap:6px">'+
-        '<div style="flex:1;height:5px;background:var(--bg4);border-radius:99px">'+
-        '<div style="width:'+pct+'%;height:100%;background:var(--acc);border-radius:99px"></div></div>'+
-        '<span style="font-size:11px;color:var(--acc)">'+pct+'%</span></div></td></tr>';
-    }).join(''):'<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--t2)">Nenhuma receita registrada ainda</td></tr>';
-  } else if(t3){
-    t3.innerHTML='<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--t2)">Nenhuma turma cadastrada</td></tr>';
-  }
+  var _rl=document.getElementById('rel-ren-load'),_rc=document.getElementById('rel-ren-content');if(_rl)_rl.style.display='none';if(_rc){_rc.style.display='block';_rc.innerHTML=html;}
 }
 
-async function relFinanceiro(){
+// ── EXPORT ──────────────────────────────────────────────────────
+function exportPDF(title, tableId) {
+  if (typeof window.jspdf==='undefined'){ alert('jsPDF não carregou. Verifique sua internet.'); return; }
+  var {jsPDF}=window.jspdf;
+  var doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  doc.setFillColor(26,35,64);doc.rect(0,0,297,20,'F');
+  doc.setTextColor(245,158,11);doc.setFontSize(13);doc.setFont('helvetica','bold');
+  doc.text('ALPIEND TREINAMENTOS',12,13);
+  doc.setTextColor(200,200,200);doc.setFontSize(10);doc.setFont('helvetica','normal');
+  doc.text(title,160,13);
+  doc.text(new Date().toLocaleDateString('pt-BR'),250,13);
+  var table=document.getElementById(tableId);
+  if(!table){alert('Carregue o relatório primeiro.');return;}
+  doc.autoTable({html:'#'+tableId,startY:25,theme:'grid',headStyles:{fillColor:[26,35,64],textColor:[245,158,11],fontStyle:'bold',fontSize:8},bodyStyles:{fontSize:8},alternateRowStyles:{fillColor:[248,249,250]},margin:{left:12,right:12},didDrawPage:function(d){doc.setFontSize(8);doc.setTextColor(150);doc.text('Página '+d.pageNumber,270,doc.internal.pageSize.height-8);}});
+  doc.save('Alpiend_'+title.replace(/[^a-zA-Z0-9]/g,'_')+'_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.pdf');
+}
+function exportExcel(title, tableId) {
+  if (typeof XLSX==='undefined'){ alert('SheetJS não carregou. Verifique sua internet.'); return; }
+  var table=document.getElementById(tableId);
+  if(!table){alert('Carregue o relatório primeiro.');return;}
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.table_to_sheet(table);
+  XLSX.utils.book_append_sheet(wb,ws,title.slice(0,30));
+  XLSX.writeFile(wb,'Alpiend_'+title+'_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.xlsx');
+}
+function exportarPDFAprovacao(){exportPDF('Indice_Aprovacao','tb-aprov-detalhe');}
+function exportarPDFFinanceiro(){exportPDF('Relatorio_Financeiro','tb-extrato');}
+async function relReceita(){
   var rc=document.getElementById('rel-content');if(!rc)return;
   rc.innerHTML='<div style="text-align:center;padding:48px;color:var(--t2)">⏳ Carregando...</div>';
-  var r1=await sbGet('matriculas','select=status,valor_pago,valor_certificacao,forma_pagamento,data_matricula,alunos(nome,empresa),turmas(nome,curso)&order=data_matricula.desc');
-  var r2=await sbGet('despesas','select=valor,categoria,data,descricao,responsavel&order=data.desc');
-  var r3=await sbGet('leads','select=etapa,valor_estimado');
-  if(r1.error){rc.innerHTML='<div class="alert">❌ Erro ao carregar: '+esc(r1.error.message)+'</div>';return;}
-  var mats=r1.data,desps=r2.data,leads=r3.data;
-  var conf=mats.filter(function(m){return m.status==='Confirmado';});
-  var receita=conf.reduce(function(s,m){return s+(parseFloat(m.valor_pago)||0)+(parseFloat(m.valor_certificacao)||0);},0);
-  var despTotal=desps.reduce(function(s,d){return s+(parseFloat(d.valor)||0);},0);
-  var margem=receita-despTotal,txM=receita?Math.round(margem/receita*100):0;
-  var tkMedio=conf.length?receita/conf.length:0;
-  var pend=mats.filter(function(m){return m.status==='Aguardando Pagamento';});
-  var valorPend=pend.reduce(function(s,m){return s+(parseFloat(m.valor_pago)||0)+(parseFloat(m.valor_certificacao)||0);},0);
-  var leadsAt=leads.filter(function(l){return l.etapa!=='Fechado'&&l.etapa!=='Perdido';});
-  var pipeline=leadsAt.reduce(function(s,l){return s+(parseFloat(l.valor_estimado)||0);},0);
-  function C(lbl,val,sub,cor){var v=(typeof val==='number')?fmt(val):String(val);return '<div class="stat-card"><div class="sc-label">'+lbl+'</div><div class="sc-val" style="font-size:19px'+(cor?';color:'+cor:'')+'">'+(v==='NaN'?'—':v)+'</div><div class="sc-sub">'+sub+'</div></div>';}
-  var cats={};desps.forEach(function(d){cats[d.categoria]=(cats[d.categoria]||0)+(parseFloat(d.valor)||0);});
-  var byFpag={};conf.forEach(function(m){var k=m.forma_pagamento||'N/A';byFpag[k]=(byFpag[k]||0)+(parseFloat(m.valor_pago)||0)+(parseFloat(m.valor_certificacao)||0);});
-  var treinT=conf.reduce(function(s,m){return s+(parseFloat(m.valor_pago)||0);},0);
-  var irataT=conf.reduce(function(s,m){return s+(parseFloat(m.valor_certificacao)||0);},0);
-  var stCls={Confirmado:'bg',Cancelado:'br',Desistente:'br','Aguardando Pagamento':'bo','Documentação Pendente':'bz'};
-  var html='';
-  html+='<div class="sec-hdr"><div class="sec-title">💰 Relatório Financeiro</div><div style="color:var(--t2);font-size:12px">Acumulado geral</div></div>';
-  html+='<div class="stats-grid" style="margin-bottom:24px">'+C('💵 Receita',receita,'Confirmados','')+C('📉 Despesas',despTotal,'Registradas','var(--red)')+C('📊 Margem',margem,(txM>=0?'▲ ':'▼ ')+Math.abs(txM)+'%',margem>=0?'var(--grn)':'var(--red)')+C('🎯 Ticket',tkMedio,'Por aluno','')+C('⏳ A Receber',valorPend,pend.length+' pend.','')+C('🌱 Pipeline',pipeline,leadsAt.length+' leads','var(--pur)')+'</div>';
-  html+='<div class="two-col" style="margin-bottom:24px">';
-  html+='<div class="box"><div class="box-title">📋 DRE — Demonstrativo de Resultado</div><table style="width:100%;font-size:13px"><thead><tr><th>Descrição</th><th style="text-align:right">Valor</th><th style="text-align:right">%</th></tr></thead><tbody>';
-  html+='<tr><td style="color:var(--grn)">✅ Treinamentos</td><td style="text-align:right;color:var(--grn)">'+fmt(treinT)+'</td><td style="text-align:right;color:var(--t2)">'+Math.round(receita?treinT/receita*100:0)+'%</td></tr>';
-  html+='<tr><td style="color:var(--grn)">✅ IRATA</td><td style="text-align:right;color:var(--grn)">'+fmt(irataT)+'</td><td style="text-align:right;color:var(--t2)">'+Math.round(receita?irataT/receita*100:0)+'%</td></tr>';
-  html+='<tr style="border-top:2px solid var(--brd2);font-weight:700"><td>= Receita Bruta</td><td style="text-align:right;color:var(--grn)">'+fmt(receita)+'</td><td></td></tr>';
-  Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];}).forEach(function(cat){html+='<tr><td style="color:var(--red)">(-) '+esc(cat)+'</td><td style="text-align:right;color:var(--red)">('+fmt(cats[cat])+')</td><td style="text-align:right;color:var(--t2)">'+Math.round(receita?cats[cat]/receita*100:0)+'%</td></tr>';});
-  html+='<tr style="border-top:2px solid var(--brd2);font-weight:700"><td>(-) Total Despesas</td><td style="text-align:right;color:var(--red)">('+fmt(despTotal)+')</td><td></td></tr>';
-  html+='<tr style="background:rgba(255,255,255,.05);font-weight:800"><td style="font-family:Syne,sans-serif">= RESULTADO</td><td style="text-align:right;font-weight:800;color:'+(margem>=0?'var(--grn)':'var(--red)')+'">'+fmt(margem)+'</td><td style="text-align:right;color:'+(margem>=0?'var(--grn)':'var(--red)')+'">'+txM+'%</td></tr>';
-  html+='</tbody></table></div>';
-  html+='<div class="box"><div class="box-title">💳 Por Forma de Pagamento</div><table style="width:100%;font-size:13px"><thead><tr><th>Forma</th><th style="text-align:right">Valor</th><th style="text-align:right">%</th></tr></thead><tbody>';
-  var fpags=Object.keys(byFpag).sort(function(a,b){return byFpag[b]-byFpag[a];});
-  if(fpags.length){fpags.forEach(function(fp){html+='<tr><td>'+esc(fp)+'</td><td style="text-align:right;font-weight:600;color:var(--grn)">'+fmt(byFpag[fp])+'</td><td style="text-align:right;color:var(--t2)">'+Math.round(receita?byFpag[fp]/receita*100:0)+'%</td></tr>';});}
-  else{html+='<tr><td colspan="3" style="text-align:center;color:var(--t2);padding:16px">Sem dados</td></tr>';}
-  html+='</tbody></table></div>';
-  html+='</div>';
-  html+='<div class="box-title" style="margin:0 0 12px">📑 Extrato de Inscrições ('+mats.length+')</div>';
-  html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data</th><th>Treino</th><th>IRATA</th><th>Total</th><th>Pagamento</th><th>Status</th></tr></thead><tbody>';
-  if(mats.length){mats.forEach(function(m){var tot=(parseFloat(m.valor_pago)||0)+(parseFloat(m.valor_certificacao)||0),sc=stCls[m.status]||'bz';html+='<tr><td><strong>'+esc((m.alunos&&m.alunos.nome)||'—')+'</strong></td><td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td><td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_matricula)+'</td><td>'+fmt(parseFloat(m.valor_pago)||0)+'</td><td>'+fmt(parseFloat(m.valor_certificacao)||0)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(tot)+'</td><td style="font-size:11px">'+esc(m.forma_pagamento||'—')+'</td><td><span class="chip '+sc+'">'+esc(m.status||'—')+'</span></td></tr>';});}
-  else{html+='<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--t2)">Nenhuma inscrição cadastrada</td></tr>';}
+  var turmas=await get('turmas','select=id,nome,curso,status,vagas,data_inicio,data_fim&order=nome.asc');
+  var mats=await get('matriculas','select=turma_id,status,valor_pago,valor_certificacao');
+  var totRec=0;
+  var rows=turmas.map(function(t){var tm=mats.filter(function(m){return m.turma_id===t.id&&m.status==='Confirmado';});var trein=tm.reduce(function(s,m){return s+(+m.valor_pago||0);},0);var irata=tm.reduce(function(s,m){return s+(+m.valor_certificacao||0);},0);totRec+=trein+irata;return{t:t,n:tm.length,trein:trein,irata:irata,total:trein+irata};}).filter(function(r){return r.total>0;}).sort(function(a,b){return b.total-a.total;});
+  var html='<div class="sec-hdr"><div class="sec-title">📈 Receita por Turma</div><div style="font-weight:700;color:var(--grn)">'+fmt(totRec)+'</div></div>';
+  html+='<div class="tbl-wrap"><table id="tb-receita-turma"><thead><tr><th>Turma</th><th>Curso</th><th>Status</th><th>Confirmados</th><th>Treinamento</th><th>IRATA</th><th>Total</th></tr></thead><tbody>';
+  if(rows.length){rows.forEach(function(r){var sc={Aberta:'bg','Em Andamento':'bo',Encerrada:'bz'}[r.t.status]||'bz';html+='<tr><td><strong>'+esc(r.t.nome||'—')+'</strong></td><td style="font-size:11px;color:var(--acc)">'+esc(r.t.curso||'—')+'</td><td><span class="chip '+sc+'">'+esc(r.t.status||'—')+'</span></td><td style="text-align:center">'+r.n+'</td><td>'+fmt(r.trein)+'</td><td>'+fmt(r.irata)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(r.total)+'</td></tr>';});}
+  else{html+='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--t2)">Nenhuma receita registrada</td></tr>';}
   html+='</tbody></table></div>';
   rc.innerHTML=html;
 }
+function exportarExcelAprovacao(){exportExcel('Aprovacao','tb-aprov-detalhe');}
+function exportarExcelFinanceiro(){exportExcel('Financeiro','tb-extrato');}
 
 async function relContas(){
   var rc=document.getElementById('rel-content');if(!rc)return;
   rc.innerHTML='<div style="text-align:center;padding:48px;color:var(--t2)">⏳ Carregando...</div>';
-  var r=await sbGet('matriculas','select=status,valor_pago,valor_certificacao,data_matricula,numero_nf,forma_pagamento,alunos(nome,empresa),turmas(nome,curso)&order=data_matricula.desc&status=neq.Cancelado');
-  if(r.error){rc.innerHTML='<div class="alert">❌ '+esc(r.error.message)+'</div>';return;}
-  var mats=r.data,pend=mats.filter(function(m){return m.status==='Aguardando Pagamento';});
+  var mats=await get('matriculas','select=status,valor_pago,valor_certificacao,forma_pagamento,data_matricula,numero_nf,alunos(nome,empresa),turmas(nome,curso)&order=data_matricula.desc');
   var stCls={Confirmado:'bg',Cancelado:'br',Desistente:'br','Aguardando Pagamento':'bo','Documentação Pendente':'bz'};
+  var pend=mats.filter(function(m){return m.status==='Aguardando Pagamento';});
   var html='<div class="sec-hdr"><div class="sec-title">📋 Contas a Receber</div><div style="color:var(--t2);font-size:13px">'+mats.length+' registros</div></div>';
-  if(pend.length)html+='<div class="alert info">⚠️ '+pend.length+' inscrição(ões) aguardando pagamento.</div>';
-  if(!mats.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">💰</div><div>Nenhum registro</div></div>';return;}
-  html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data</th><th>Treino</th><th>IRATA</th><th>Total</th><th>Status</th></tr></thead><tbody>';
-  mats.forEach(function(m){var tot=(parseFloat(m.valor_pago)||0)+(parseFloat(m.valor_certificacao)||0),sc=stCls[m.status]||'bz';html+='<tr><td>'+esc((m.alunos&&m.alunos.nome)||'—')+'</td><td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td><td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_matricula)+'</td><td>'+fmt(parseFloat(m.valor_pago)||0)+'</td><td>'+fmt(parseFloat(m.valor_certificacao)||0)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(tot)+'</td><td><span class="chip '+sc+'">'+esc(m.status||'—')+'</span></td></tr>';});
-  html+='</tbody></table></div>';rc.innerHTML=html;
+  if(pend.length)html+='<div class="alert info">⚠️ '+pend.length+' aguardando pagamento.</div>';
+  html+='<div class="tbl-wrap"><table id="tb-contas"><thead><tr><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data</th><th>Treino</th><th>IRATA</th><th>Total</th><th>Status</th></tr></thead><tbody>';
+  if(mats.length){mats.forEach(function(m){var tot=(+m.valor_pago||0)+(+m.valor_certificacao||0),sc=stCls[m.status]||'bz';html+='<tr><td>'+esc((m.alunos&&m.alunos.nome)||'—')+'</td><td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td><td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_matricula)+'</td><td>'+fmt(+m.valor_pago||0)+'</td><td>'+fmt(+m.valor_certificacao||0)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(tot)+'</td><td><span class="chip '+sc+'">'+esc(m.status||'—')+'</span></td></tr>';});}
+  else{html+='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--t2)">Nenhuma inscrição</td></tr>';}
+  html+='</tbody></table></div>';
+  rc.innerHTML=html;
 }
 
 async function relNFs(){
   var rc=document.getElementById('rel-content');if(!rc)return;
   rc.innerHTML='<div style="text-align:center;padding:48px;color:var(--t2)">⏳ Carregando...</div>';
-  var r=await sbGet('matriculas','select=numero_nf,data_nf,status_nf,valor_pago,valor_certificacao,alunos(nome,empresa),turmas(nome)&numero_nf=not.is.null&order=data_nf.desc');
-  if(r.error){rc.innerHTML='<div class="alert">❌ '+esc(r.error.message)+'</div>';return;}
-  var nfs=r.data;
-  var html='<div class="sec-hdr"><div class="sec-title">🧾 Notas Fiscais</div><div style="color:var(--t2);font-size:13px">'+nfs.length+' registros</div></div>';
-  if(!nfs.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">🧾</div><div>Nenhuma nota fiscal</div></div>';return;}
+  var nfs=await get('matriculas','select=numero_nf,data_nf,status_nf,valor_pago,valor_certificacao,alunos(nome,empresa),turmas(nome)&numero_nf=not.is.null&order=data_nf.desc');
   var nfCls={Emitida:'bg',Cancelada:'br',Pendente:'bo'};
-  html+='<div class="tbl-wrap"><table><thead><tr><th>NF</th><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data NF</th><th>Total</th><th>Status</th></tr></thead><tbody>';
-  nfs.forEach(function(m){var tot=(parseFloat(m.valor_pago)||0)+(parseFloat(m.valor_certificacao)||0),nc=nfCls[m.status_nf]||'bo';html+='<tr><td style="font-weight:700">'+esc(m.numero_nf||'—')+'</td><td>'+esc((m.alunos&&m.alunos.nome)||'—')+'</td><td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td><td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_nf)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(tot)+'</td><td><span class="chip '+nc+'">'+esc(m.status_nf||'—')+'</span></td></tr>';});
-  html+='</tbody></table></div>';rc.innerHTML=html;
+  var html='<div class="sec-hdr"><div class="sec-title">🧾 Notas Fiscais</div><div style="color:var(--t2);font-size:13px">'+nfs.length+' registros</div></div>';
+  html+='<div class="tbl-wrap"><table id="tb-nfs"><thead><tr><th>NF</th><th>Aluno</th><th>Empresa</th><th>Turma</th><th>Data NF</th><th>Total</th><th>Status</th></tr></thead><tbody>';
+  if(nfs.length){nfs.forEach(function(m){var tot=(+m.valor_pago||0)+(+m.valor_certificacao||0),nc=nfCls[m.status_nf]||'bo';html+='<tr><td style="font-weight:700">'+esc(m.numero_nf||'—')+'</td><td>'+esc((m.alunos&&m.alunos.nome)||'—')+'</td><td style="font-size:11px">'+esc((m.alunos&&m.alunos.empresa)||'—')+'</td><td style="font-size:11px">'+esc((m.turmas&&m.turmas.nome)||'—')+'</td><td style="font-size:11px">'+fmtD(m.data_nf)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(tot)+'</td><td><span class="chip '+nc+'">'+esc(m.status_nf||'—')+'</span></td></tr>';});}
+  else{html+='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--t2)">Nenhuma nota fiscal</td></tr>';}
+  html+='</tbody></table></div>';
+  rc.innerHTML=html;
 }
-
-async function relReceita(){
-  var rc=document.getElementById('rel-content');if(!rc)return;
-  rc.innerHTML='<div style="text-align:center;padding:48px;color:var(--t2)">⏳ Carregando...</div>';
-  var r1=await sbGet('turmas','select=id,nome,curso,status&order=nome.asc');
-  var r2=await sbGet('matriculas','select=turma_id,status,valor_pago,valor_certificacao');
-  var turmas=r1.data,mats=r2.data;
-  var totRec=0;
-  var rows=turmas.map(function(t){
-    var tm=mats.filter(function(m){return m.turma_id===t.id&&m.status==='Confirmado';});
-    var trein=tm.reduce(function(s,m){return s+(parseFloat(m.valor_pago)||0);},0);
-    var irata=tm.reduce(function(s,m){return s+(parseFloat(m.valor_certificacao)||0);},0);
-    totRec+=trein+irata;
-    return{t:t,n:tm.length,trein:trein,irata:irata,total:trein+irata};
-  }).filter(function(r){return r.total>0;}).sort(function(a,b){return b.total-a.total;});
-  var html='<div class="sec-hdr"><div class="sec-title">📈 Receita por Turma</div><div style="font-weight:700;color:var(--grn)">'+fmt(totRec)+'</div></div>';
-  html+='<div class="tbl-wrap"><table><thead><tr><th>Turma</th><th>Curso</th><th>Confirmados</th><th>Treinamento</th><th>IRATA</th><th>Total</th></tr></thead><tbody>';
-  if(rows.length){rows.forEach(function(r){html+='<tr><td><strong>'+esc(r.t.nome||'—')+'</strong></td><td style="font-size:11px;color:var(--acc)">'+esc(r.t.curso||'—')+'</td><td style="text-align:center">'+r.n+'</td><td>'+fmt(r.trein)+'</td><td>'+fmt(r.irata)+'</td><td style="font-weight:700;color:var(--grn)">'+fmt(r.total)+'</td></tr>';});}
-  else{html+='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--t2)">Nenhuma receita registrada</td></tr>';}
-  html+='</tbody></table></div>';rc.innerHTML=html;
-}
-
-async function relAprovacao(){
-  var rc=document.getElementById('rel-content');if(!rc)return;
-  rc.innerHTML='<div style="text-align:center;padding:48px;color:var(--t2)">⏳ Carregando...</div>';
-  var r=await sbGet('certificacoes','select=tipo_curso,numero_certificado,data_emissao,data_vencimento,nota_aprovacao,status,alunos(nome)&order=data_emissao.desc');
-  if(r.error){rc.innerHTML='<div class="alert">❌ '+esc(r.error.message)+'</div>';return;}
-  var certs=r.data;
-  var total=certs.length;
-  var apr=certs.filter(function(c){return c.nota_aprovacao!=null&&parseFloat(c.nota_aprovacao)>=8.6;}).length;
-  var taxa=total?Math.round(apr/total*100):0;
-  var now=new Date();
-  var html='<div class="sec-hdr"><div class="sec-title">🏆 Índice de Aprovação</div>';
-  html+='<div style="display:flex;gap:20px;font-size:13px">'+
-    '<span>Total: <strong>'+total+'</strong></span>'+
-    '<span style="color:var(--grn)">✅ Aprovados: <strong>'+apr+'</strong></span>'+
-    '<span style="color:var(--red)">❌ Reprovados: <strong>'+(total-apr)+'</strong></span>'+
-    '<span style="color:var(--acc)">📊 Taxa: <strong style="font-size:16px">'+taxa+'%</strong></span>'+
-    '</div></div>';
-  // Mini gráfico visual de taxa
-  html+='<div style="background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);padding:20px;margin-bottom:20px;display:flex;align-items:center;gap:20px">';
-  html+='<div style="flex:1"><div style="height:20px;background:var(--bg4);border-radius:99px;overflow:hidden">'+
-    '<div style="width:'+taxa+'%;height:100%;background:var(--grd);border-radius:99px;transition:width .5s"></div></div>'+
-    '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--t2)"><span>0%</span><span style="color:var(--acc);font-weight:700">'+taxa+'% Aprovados</span><span>100%</span></div></div>';
-  html+='<div style="text-align:center;min-width:80px"><div style="font-family:Syne,sans-serif;font-size:40px;font-weight:800;color:'+(taxa>=80?'var(--grn)':taxa>=60?'var(--orn)':'var(--red)')+'">'+taxa+'%</div><div style="font-size:11px;color:var(--t2)">Meta: 80%</div></div>';
-  html+='</div>';
-  if(!certs.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">🏆</div><div>Nenhuma certificação cadastrada</div></div>';return;}
-  html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Tipo</th><th>Certificado</th><th>Emissão</th><th>Vencimento</th><th>Nota</th><th>Resultado</th></tr></thead><tbody>';
-  certs.forEach(function(c){
-    var nota=c.nota_aprovacao!=null?parseFloat(c.nota_aprovacao):null;
-    var ok=nota!=null&&nota>=8.6;
-    var venc=c.data_vencimento?new Date(c.data_vencimento):null;
-    var dias=venc?Math.ceil((venc-now)/864e5):null;
-    var vStr=venc?'<span style="color:'+(dias<0?'var(--red)':dias<=90?'var(--orn)':'var(--grn)')+'">'+fmtD(c.data_vencimento)+(dias!=null?' ('+Math.abs(dias)+'d)':'')+'</span>':'—';
-    html+='<tr><td><strong>'+esc((c.alunos&&c.alunos.nome)||'—')+'</strong></td>'+
-      '<td><span class="chip">'+esc(c.tipo_curso||'—')+'</span></td>'+
-      '<td style="font-size:11px">'+esc(c.numero_certificado||'—')+'</td>'+
-      '<td style="font-size:11px">'+fmtD(c.data_emissao)+'</td>'+
-      '<td style="font-size:11px">'+vStr+'</td>'+
-      '<td>'+(nota!=null?'<span style="font-weight:800;font-size:15px;color:'+(ok?'var(--grn)':'var(--red)')+'">'+nota.toFixed(1)+'</span>':'—')+'</td>'+
-      '<td><span class="chip '+(ok?'bg':'br')+'">'+(ok?'✅ Aprovado':'❌ Reprovado')+'</span></td></tr>';
-  });
-  html+='</tbody></table></div>';rc.innerHTML=html;
-}
-
-async function relRenovacao(){
-  var rc=document.getElementById('rel-content');if(!rc)return;
-  rc.innerHTML='<div style="text-align:center;padding:48px;color:var(--t2)">⏳ Carregando...</div>';
-  var r=await sbGet('certificacoes','select=tipo_curso,data_vencimento,alunos(nome,whatsapp)&order=data_vencimento.asc');
-  if(r.error){rc.innerHTML='<div class="alert">❌ '+esc(r.error.message)+'</div>';return;}
-  var now=new Date(),d90=new Date();d90.setDate(now.getDate()+90);
-  var certs=(r.data).filter(function(c){return c.data_vencimento&&new Date(c.data_vencimento)<=d90;});
-  var html='<div class="sec-hdr"><div class="sec-title">🔄 Renovações Pendentes</div><div style="color:var(--t2);font-size:13px">'+certs.length+' cert(s) vencem em 90 dias</div></div>';
-  if(!certs.length){rc.innerHTML=html+'<div class="alert ok">🎉 Nenhuma renovação pendente nos próximos 90 dias!</div>';return;}
-  html+='<div class="tbl-wrap"><table><thead><tr><th>Aluno</th><th>Tipo</th><th>Vencimento</th><th>Situação</th><th>Avisar</th></tr></thead><tbody>';
-  certs.forEach(function(c){
-    var v=new Date(c.data_vencimento),dias=Math.ceil((v-now)/864e5);
-    var cls=dias<0?'br':dias<=30?'br':'bo';
-    var lbl=dias<0?'Vencido '+Math.abs(dias)+'d':dias===0?'Vence hoje':'Vence em '+dias+'d';
-    var al=c.alunos||{};
-    var wpp=al.whatsapp?'<button class="btn btn-w btn-xs" data-wpp="'+esc(al.whatsapp)+'" data-nome="'+esc(al.nome||'')+'" data-tipo="'+esc(c.tipo_curso||'')+'" data-dias="'+dias+'" onclick="avisarRenov(this)">📱 Avisar</button>':'—';
-    html+='<tr><td><strong>'+esc(al.nome||'—')+'</strong></td><td><span class="chip">'+esc(c.tipo_curso||'—')+'</span></td><td style="font-size:11px">'+fmtD(c.data_vencimento)+'</td><td><span class="chip '+cls+'">'+lbl+'</span></td><td>'+wpp+'</td></tr>';
-  });
-  html+='</tbody></table></div>';rc.innerHTML=html;
-}
-function avisarRenov(btn){var wpp=btn.dataset.wpp,nome=btn.dataset.nome,tipo=btn.dataset.tipo,dias=parseInt(btn.dataset.dias);window.open(wppUrl(wpp,'Olá *'+nome+'*! Seu certificado *'+tipo+'* '+(dias<0?'venceu há '+Math.abs(dias)+' dia(s)':'vence em '+dias+' dia(s)')+'. Entre em contato para renovar! 🏔️'),'_blank');}
 
 async function relDespesas(){
   var rc=document.getElementById('rel-content');if(!rc)return;
   rc.innerHTML='<div style="text-align:center;padding:48px;color:var(--t2)">⏳ Carregando...</div>';
-  var r=await sbGet('despesas','select=data,categoria,descricao,valor,responsavel,turmas(nome)&order=data.desc');
-  if(r.error){
-    if(r.error.message&&r.error.message.includes('does not exist')){
-      rc.innerHTML='<div class="alert">⚠️ Tabela "despesas" não existe ainda.<br><button class="btn btn-p btn-sm" style="margin-top:8px" onclick="mostrarSQL()">📋 Ver SQL para criar</button></div>';
-      return;
-    }
-    rc.innerHTML='<div class="alert">❌ '+esc(r.error.message)+'</div>';return;
-  }
-  var desps=r.data,total=desps.reduce(function(s,d){return s+(parseFloat(d.valor)||0);},0);
-  var cats={};desps.forEach(function(d){cats[d.categoria]=(cats[d.categoria]||0)+(parseFloat(d.valor)||0);});
+  var desps=await get('despesas','select=data,categoria,descricao,valor,responsavel&order=data.desc');
+  var total=desps.reduce(function(s,d){return s+(+d.valor||0);},0);
   var html='<div class="sec-hdr"><div class="sec-title">📉 Despesas</div><div style="font-weight:700;color:var(--red)">'+fmt(total)+'</div></div>';
-  if(!desps.length){rc.innerHTML=html+'<div class="empty"><div class="empty-ico">📉</div><div>Nenhuma despesa</div></div>';return;}
-  var topCats=Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];}).slice(0,4);
-  html+='<div class="stats-grid" style="margin-bottom:20px">';
-  topCats.forEach(function(cat){html+='<div class="stat-card red"><div class="sc-label">'+esc(cat)+'</div><div class="sc-val" style="font-size:18px;color:var(--red)">'+fmt(cats[cat])+'</div></div>';});
-  html+='</div>';
-  html+='<div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Responsável</th><th>Turma</th></tr></thead><tbody>';
-  desps.forEach(function(d){html+='<tr><td style="font-size:11px">'+fmtD(d.data)+'</td><td><span class="chip">'+esc(d.categoria||'—')+'</span></td><td style="font-size:12px">'+esc(d.descricao||'—')+'</td><td style="font-weight:700;color:var(--red)">'+fmt(parseFloat(d.valor)||0)+'</td><td style="font-size:11px">'+esc(d.responsavel||'—')+'</td><td style="font-size:11px">'+esc((d.turmas&&d.turmas.nome)||'Geral')+'</td></tr>';});
-  html+='</tbody></table></div>';rc.innerHTML=html;
+  html+='<div class="tbl-wrap"><table id="tb-despesas"><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Responsável</th></tr></thead><tbody>';
+  if(desps.length){desps.forEach(function(d){html+='<tr><td style="font-size:11px">'+fmtD(d.data)+'</td><td><span class="chip bz">'+esc(d.categoria||'—')+'</span></td><td style="font-size:12px">'+esc(d.descricao||'—')+'</td><td style="font-weight:700;color:var(--red)">'+fmt(+d.valor||0)+'</td><td style="font-size:11px">'+esc(d.responsavel||'—')+'</td></tr>';});}
+  else{html+='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--t2)">Nenhuma despesa</td></tr>';}
+  html+='</tbody></table></div>';
+  rc.innerHTML=html;
 }
 
+
+function exportarPDFAtivo(){
+  var tab=window._activeRelTab||'financeiro-rel';
+  if(tab==='financeiro-rel'){exportPDF('Financeiro','tb-extrato');}
+  else if(tab==='aprovacao'){exportPDF('Aprovacao','tb-aprov-detalhe');}
+  else if(tab==='contas'){exportPDF('Contas','tb-contas');}
+  else if(tab==='nfs'){exportPDF('NotasFiscais','tb-nfs');}
+  else if(tab==='receita'){exportPDF('ReceitaTurma','tb-receita-turma');}
+  else if(tab==='despesas-rel'){exportPDF('Despesas','tb-despesas');}
+  else{var t=document.querySelector('#rel-content table,#rel-fin-content table,#rel-apr-content table');if(t){t.id=t.id||'tmp-tb';exportPDF('Relatorio',t.id);}}
+}
+function exportarExcelAtivo(){
+  var tab=window._activeRelTab||'financeiro-rel';
+  if(tab==='financeiro-rel'){exportExcel('Financeiro','tb-extrato');}
+  else if(tab==='aprovacao'){exportExcel('Aprovacao','tb-aprov-detalhe');}
+  else if(tab==='contas'){exportExcel('Contas','tb-contas');}
+  else if(tab==='nfs'){exportExcel('NotasFiscais','tb-nfs');}
+  else if(tab==='receita'){exportExcel('ReceitaTurma','tb-receita-turma');}
+  else if(tab==='despesas-rel'){exportExcel('Despesas','tb-despesas');}
+  else{var t=document.querySelector('#rel-content table,#rel-fin-content table,#rel-apr-content table');if(t){t.id=t.id||'tmp-tb';exportExcel('Relatorio',t.id);}}
+}
 
 function copiarSQL(){
   navigator.clipboard.writeText(SQL_MIGRACAO).then(function(){toast('✅','SQL copiado!','inf');});
